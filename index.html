@@ -1,0 +1,34 @@
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El De Los Pinos – Accesos</title>
+<style>
+  :root{color-scheme:light dark}
+  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif; margin:24px; line-height:1.4}
+  .grid{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+  .card{border:1px solid #ccc; border-radius:14px; padding:16px}
+  .btn{display:inline-block; padding:10px 14px; border-radius:10px; border:1px solid #999; text-decoration:none}
+  .hint{opacity:.7; font-size:14px}
+  @media (prefers-color-scheme:dark){ .card{border-color:#333} .btn{border-color:#555} }
+</style>
+</head><body>
+  <h2>El De Los Pinos – Accesos rápidos</h2>
+  <p class="hint">Abrí esta página desde el celular como <b>http://192.168.1.176:8000/static/index.html</b> (misma Wi‑Fi) y agregala a la pantalla de inicio.</p>
+  <div class="grid">
+    <div class="card">
+      <h3>Mozo</h3>
+      <p>Tomar pedidos desde el celular (offline con cola).</p>
+      <a class="btn" href="./mozo.html">Abrir Mozo</a>
+    </div>
+    <div class="card">
+      <h3>Cocina</h3>
+      <p>Ver y editar comandas, anular/restaurar.</p>
+      <a class="btn" href="./cocina.html">Abrir Cocina</a>
+    </div>
+    <div class="card">
+      <h3>API Docs</h3>
+      <p>Documentación interactiva de la API.</p>
+      <a class="btn" href="/docs">Abrir /docs</a>
+    </div>
+  </div>
+  <p class="hint">Consejo: en Chrome Android, menú (⋮) → <b>Añadir a pantalla de inicio</b>.</p>
+</body></html>

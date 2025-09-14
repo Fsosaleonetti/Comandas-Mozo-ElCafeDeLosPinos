@@ -1,0 +1,113 @@
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mozo — Nuevo Pedido</title>
+<link rel="manifest" href="manifest.mozo.webmanifest">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="icon" href="icons/mozo-192.png">
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:16px;background:#111;color:#eee;}
+  .row{margin:8px 0}
+  .card{border:1px solid #444;padding:10px;border-radius:10px;margin:8px 0;background:rgba(255,255,255,.04);}
+  label{margin-right:12px;}
+  button{padding:7px 14px;border-radius:10px;border:1px solid #444;background:rgba(255,255,255,.08);color:#eee;}
+  button:hover{filter:brightness(1.15);}
+  textarea{background:#222;color:#eee;border-radius:8px;border:1px solid #444;padding:8px;}
+  select,input[type=text]{background:#222;color:#eee;border-radius:8px;border:1px solid #444;padding:6px;}
+  #offlineBar{background:#333;color:#fff;padding:8px;border-radius:8px;margin:8px 0;}
+</style>
+</head><body>
+<div id="offlineBar" style="display:none">
+  Modo sin conexión activo: los pedidos se guardarán y se enviarán automáticamente cuando vuelva Internet.
+  <span id="queueCount" style="float:right">Pendientes: 0</span>
+</div>
+
+<h2>Nuevo pedido</h2>
+<form id="frm">
+  <div class="row">
+    <label>Mesa:
+      <select id="mesa">
+        <option value="1">Mesa 1</option>
+        <option value="2">Mesa 2</option>
+        <option value="3">Mesa 3</option>
+        <option value="4">Mesa 4</option>
+        <option value="5">Mesa 5</option>
+        <option value="6">Mesa 6</option>
+        <option value="7">Mesa 7</option>
+        <option value="8">Mesa 8</option>
+        <option value="9">Mesa 9</option>
+        <option value="10">Mesa 10</option>
+      </select>
+    </label>
+    <label>Mozo (opcional):
+      <input id="mozo" type="text" placeholder="escribí tu nombre">
+    </label>
+  </div>
+  <div class="row">
+    <label>Pedido (texto libre):</label><br>
+    <textarea id="pedido" rows="4" style="width:100%" placeholder="Ej: 2 cafés, 1 medialuna, 1 tostado sin sal..."></textarea>
+  </div>
+  <div class="row">
+    <button type="submit">Enviar pedido</button>
+    <button id="flushBtn" type="button">Enviar pendientes</button>
+  </div>
+</form>
+
+<script>
+const API = location.origin;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try { await navigator.serviceWorker.register('/static/sw-mozo.js'); } catch(e){ console.log('SW error', e); }
+  });
+}
+const QUEUE_KEY = 'mozo_order_queue_v1';
+function getQueue(){ try { return JSON.parse(localStorage.getItem(QUEUE_KEY)||'[]'); } catch(e){ return []; } }
+function setQueue(q){ localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); updateQueueUI(); }
+function enqueue(order){ const q = getQueue(); q.push({ts: Date.now(), order}); setQueue(q); }
+async function flushQueue(){
+  const q = getQueue();
+  if(!q.length) return alert("No hay pendientes.");
+  let ok = 0, fail = 0;
+  for(let i=0;i<q.length;i++){
+    const payload = q[i].order;
+    try{
+      const res = await fetch(API+"/orders",{method:"POST", headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      const js = await res.json();
+      if(js && js.ok){ ok++; } else { fail++; }
+    }catch(e){ fail++; }
+  }
+  if (fail===0) setQueue([]);
+  updateQueueUI();
+  alert(ok ? `Se enviaron ${ok} pedidos.` : "No se pudo enviar la cola.");
+}
+function updateQueueUI(){
+  const count = getQueue().length;
+  const bar = document.getElementById('offlineBar');
+  const qc = document.getElementById('queueCount');
+  if(qc) qc.textContent = 'Pendientes: ' + count;
+  if(!navigator.onLine || count>0){ if(bar) bar.style.display = 'block'; } else { if(bar) bar.style.display = 'none'; }
+}
+window.addEventListener('online', flushQueue);
+window.addEventListener('offline', updateQueueUI);
+updateQueueUI();
+
+document.getElementById('flushBtn')?.addEventListener('click', flushQueue);
+
+document.getElementById('frm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const mesa = parseInt(document.getElementById('mesa').value,10);
+  const mozo = document.getElementById('mozo').value.trim();
+  const libre = document.getElementById('pedido').value.trim();
+  const payload = { table_id: mesa, mozo_nombre: mozo, items: [{ product_id: null, cantidad: 1, notas: libre }] };
+  try{
+    const res = await fetch(API+"/orders",{ method:"POST", headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    const js = await res.json();
+    if(js.ok){ alert("Pedido enviado #"+(js.order_id||"")); location.reload(); }
+    else { throw new Error("respuesta no OK"); }
+  }catch(err){
+    enqueue(payload);
+    alert("Sin conexión: el pedido quedó en cola y se enviará cuando vuelva Internet.");
+  } finally { updateQueueUI(); }
+});
+</script>
+</body></html>

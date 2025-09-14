@@ -1,0 +1,151 @@
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cocina — Comandas</title>
+<style>
+  :root{ color-scheme: light dark; }
+  body{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:16px; background:#111; color:#eee; }
+  #lista{ display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items:start; }
+  .card{ background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.15); border-radius:14px; padding:12px; }
+  .card.anulada{ opacity:.65; filter: grayscale(.15); }
+  .badge{ background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); border-radius:10px; padding:2px 8px; margin-right:6px; }
+  .head-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; }
+  .head-left{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .head-right{ display:flex; gap:8px; align-items:center; }
+  .item{ display:grid; grid-template-columns: 64px 1fr 36px; grid-template-areas: "qty name del" "note note note"; gap:8px; align-items:center; padding:6px 0; border-bottom: 1px dashed rgba(255,255,255,.12); }
+  .item:last-child{ border-bottom:none; }
+  .item .qty{ grid-area: qty; width:64px; }
+  .item .name{ grid-area: name; min-width: 120px; }
+  .item .delItem{ grid-area: del; width:36px; height:32px; }
+  .item .note{ grid-area: note; width:100%; box-sizing:border-box; resize: none; min-height: 34px; }
+  @media (max-width: 640px){ .item{ grid-template-columns: 54px 1fr 32px; } .item .qty{ width:54px; } .item .delItem{ width:32px; height:30px; } }
+  .btn{ padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:transparent; }
+  .btn:hover{ filter: brightness(1.1); }
+  .muted{ font-size:12px; opacity:.7; }
+</style>
+</head><body>
+<div id="resetBanner" style="background:#006400;color:#fff;padding:10px;text-align:center;display:none">
+  ✔ Base de datos reiniciada al iniciar el servidor
+</div>
+
+<h2>Comandas</h2>
+<div style="display:flex;gap:10px;align-items:center">
+  <button id="refrescar" class="btn">Refrescar</button>
+  <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="verAnuladas"> Ver anuladas</label>
+  <span id="status" class="muted"></span>
+</div>
+<div id="lista"></div>
+<script>
+const API = location.origin;
+const listaEl = document.getElementById("lista");
+const refrescar = document.getElementById("refrescar");
+const status = document.getElementById("status");
+const verAnuladas = document.getElementById("verAnuladas");
+const WS_URL = (location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.host + '/ws/kitchen';
+
+function showResetOnce(){
+  const b = document.getElementById("resetBanner");
+  if(!b) return;
+  b.style.display = "block"; setTimeout(()=>{ b.style.display = "none"; }, 5000);
+}
+
+async function cargar(){
+  const query = verAnuladas && verAnuladas.checked ? "?anuladas=1" : "?anuladas=0";
+  const res = await fetch(API + "/orders" + query);
+  const data = await res.json();
+  render(data);
+}
+
+function render(lista){
+  listaEl.innerHTML = lista.map(o=>`
+    <div class="card ${o.anulada ? 'anulada' : ''}" data-oid="${o.id}">
+      <div class="head-row">
+        <div class="head-left">
+          <span class="badge">${o.mesa||('Mesa '+o.table_id)}</span>
+          — Mozo: <input type="text" class="mozoNombre" value="${o.mozo||o.mozo_nombre||''}" style="width:140px">
+        </div>
+        <div class="head-right">
+          Mesa:
+          <select class="mesaSel">
+            ${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${n==o.table_id?'selected':''}>${n}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="items" style="margin-top:6px">
+        ${o.items.map(it=>`
+          <div class="item">
+            <input type="number" min="0" value="${it.cantidad}" data-itemid="${it.id}" class="qty">
+            <span class="name">${it.nombre}</span>
+            <button class="delItem btn" data-itemid="${it.id}">✕</button>
+            <textarea data-itemid="${it.id}" class="note" placeholder="Notas (opcional)">${it.notas||''}</textarea>
+          </div>
+        `).join("")}
+      </div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        ${o.anulada
+          ? `<button class="restore btn" data-oid="${o.id}">Restaurar</button>`
+          : `<button class="save btn" data-oid="${o.id}">Guardar</button>
+             <button class="cancel btn" data-oid="${o.id}">Anular</button>`
+        }
+        <span class="muted">${new Date(o.ts).toLocaleTimeString()} · ${o.items.length} ítem(s)</span>
+      </div>
+    </div>`).join("");
+  // autoaltura notas
+  listaEl.querySelectorAll('textarea.note').forEach(ta=>{
+    const grow = ()=>{ ta.style.height='auto'; ta.style.height=(ta.scrollHeight)+'px'; };
+    ta.addEventListener('input', grow); grow();
+  });
+}
+
+refrescar && (refrescar.onclick=cargar);
+verAnuladas && (verAnuladas.onchange=cargar);
+cargar();
+
+const ws = new WebSocket(WS_URL);
+ws.onopen=()=>status.textContent="(escuchando pedidos...)";
+ws.onclose=()=>status.textContent="(desconectado)";
+ws.onmessage=(e)=>{ const msg=JSON.parse(e.data); if(msg.type==="new_order"||msg.type==="order_restored"){ cargar(); } };
+
+function cardFromChild(el){ while(el && !el.classList.contains('card')) el = el.parentElement; return el; }
+listaEl.addEventListener('click', async (e)=>{
+  if(e.target.classList.contains('save')){
+    const card = cardFromChild(e.target);
+    const orderId = e.target.dataset.oid;
+    const pin = prompt("PIN admin para guardar cambios:"); if(!pin) return;
+    const qtys = [...card.querySelectorAll('.qty')];
+    const notes = [...card.querySelectorAll('.note')];
+    const mesaSel = card.querySelector('.mesaSel');
+    const mozoNombre = card.querySelector('.mozoNombre');
+    const byId = {};
+    qtys.forEach(i=>{ byId[i.dataset.itemid] = byId[i.dataset.itemid] || {}; byId[i.dataset.itemid].cantidad = parseInt(i.value||'0',10); });
+    notes.forEach(i=>{ byId[i.dataset.itemid] = byId[i.dataset.itemid] || {}; byId[i.dataset.itemid].notas = i.value; });
+    const items = Object.entries(byId).map(([id,vals])=>({id:parseInt(id,10), ...vals}));
+    const payload = { admin_pin: pin, items, table_id: parseInt(mesaSel.value,10), mozo_nombre: mozoNombre.value };
+    const res = await fetch(API+"/orders/"+orderId, { method:"PUT", headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    const js = await res.json();
+    if(js.ok){ alert("Guardado"); cargar(); } else { alert("Error: "+(js.detail||'No se pudo guardar')); }
+  }
+  if(e.target.classList.contains('cancel')){
+    if(!confirm("¿Seguro que querés anular esta comanda?")) return;
+    const oid = e.target.dataset.oid;
+    const res = await fetch(API+"/orders/"+oid+"/cancel", { method:"POST", headers:{'Content-Type':'application/json'}, body: JSON.stringify("")});
+    const js = await res.json();
+    if(js.ok){ alert("Comanda anulada"); cargar(); } else { alert("Error: "+(js.detail||'No se pudo anular')); }
+  }
+  if(e.target.classList.contains('restore')){
+    if(!confirm("¿Seguro que querés restaurar esta comanda?")) return;
+    const oid = e.target.dataset.oid;
+    const res = await fetch(API+"/orders/"+oid+"/uncancel", { method:"POST", headers:{'Content-Type':'application/json'}, body: JSON.stringify("")});
+    const js = await res.json();
+    if(js.ok){ alert("Comanda restaurada"); cargar(); } else { alert("Error: "+(js.detail||'No se pudo restaurar')); }
+  }
+  if(e.target.classList.contains('delItem')){
+    const iid = e.target.dataset.itemid;
+    const input = cardFromChild(e.target).querySelector('.qty[data-itemid="'+iid+'"]');
+    if(input){ input.value = 0; e.target.parentElement.style.opacity = 0.6; }
+  }
+});
+
+// Mostrar banner de reset al cargar
+document.addEventListener("DOMContentLoaded", showResetOnce);
+</script>
+</body></html>
