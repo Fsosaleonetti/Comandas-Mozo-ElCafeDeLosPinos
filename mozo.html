@@ -5,65 +5,113 @@
 <meta name="theme-color" content="#1a1a1a">
 <link rel="icon" href="icons/mozo-192.png">
 <style>
-  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:16px;background:#111;color:#eee;}
-  .row{margin:8px 0}
-  .card{border:1px solid #444;padding:10px;border-radius:10px;margin:8px 0;background:rgba(255,255,255,.04);}
-  label{margin-right:12px;}
-  button{padding:7px 14px;border-radius:10px;border:1px solid #444;background:rgba(255,255,255,.08);color:#eee;}
+  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:16px;background:#111;color:#eee;}
+  .row{margin:12px 0}
+  .card{border:1px solid #444;padding:12px;border-radius:10px;margin:8px 0;background:rgba(255,255,255,.04);}
+  label{margin-right:12px;font-weight:500;}
+  button{padding:10px 16px;border-radius:10px;border:1px solid #444;background:rgba(255,255,255,.08);color:#eee;cursor:pointer;font-size:15px;}
   button:hover{filter:brightness(1.15);}
-  textarea{background:#222;color:#eee;border-radius:8px;border:1px solid #444;padding:8px;}
-  select,input[type=text]{background:#222;color:#eee;border-radius:8px;border:1px solid #444;padding:6px;}
-  #offlineBar{background:#333;color:#fff;padding:8px;border-radius:8px;margin:8px 0;}
+  button:active{transform:scale(0.98);}
+  textarea{background:#222;color:#eee;border-radius:8px;border:1px solid #444;padding:8px;width:100%;box-sizing:border-box;font-family:inherit;}
+  select,input[type=text],input[type=search]{background:#222;color:#eee;border-radius:8px;border:1px solid #444;padding:8px;font-size:15px;}
+  #offlineBar{background:#d97706;color:#fff;padding:10px;border-radius:8px;margin:8px 0;font-weight:500;}
+  .tabs{display:flex;gap:8px;margin:16px 0;border-bottom:2px solid #333;}
+  .tab{padding:10px 16px;cursor:pointer;border-radius:8px 8px 0 0;background:transparent;border:none;color:#999;font-size:15px;}
+  .tab.active{background:rgba(255,255,255,.08);color:#eee;font-weight:500;}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+  .categories{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+  .cat-btn{padding:8px 14px;border-radius:20px;border:1px solid #555;background:#222;color:#aaa;font-size:14px;cursor:pointer;}
+  .cat-btn.active{background:#3b82f6;color:#fff;border-color:#3b82f6;}
+  .products{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin:12px 0;}
+  .product{border:1px solid #444;border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:#1a1a1a;transition:all 0.2s;}
+  .product:hover{border-color:#3b82f6;background:#222;}
+  .product:active{transform:scale(0.96);}
+  .product-name{font-size:14px;margin-bottom:4px;font-weight:500;}
+  .product-price{font-size:13px;color:#10b981;font-weight:600;}
+  .search-box{width:100%;padding:10px;font-size:15px;margin-bottom:12px;}
+  .cart{margin:16px 0;}
+  .cart-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid #444;border-radius:8px;margin:6px 0;background:#1a1a1a;}
+  .cart-item-name{flex:1;font-weight:500;}
+  .cart-item-qty{display:flex;gap:8px;align-items:center;}
+  .cart-item-qty button{padding:6px 12px;font-size:14px;min-width:36px;}
+  .cart-item-notes{width:100%;margin-top:6px;font-size:13px;padding:6px;}
+  .total{font-size:18px;font-weight:600;color:#10b981;text-align:right;margin:12px 0;}
+  .btn-primary{background:#3b82f6;border-color:#3b82f6;color:#fff;font-weight:600;font-size:16px;}
+  .btn-primary:hover{background:#2563eb;}
 </style>
 </head><body>
 <div id="offlineBar" style="display:none">
-  Modo sin conexión activo: los pedidos se guardarán y se enviarán automáticamente cuando vuelva Internet.
+  🔴 Modo sin conexión: los pedidos se guardarán y enviarán cuando vuelva Internet.
   <span id="queueCount" style="float:right">Pendientes: 0</span>
 </div>
 
 <h2>Nuevo pedido</h2>
-<form id="frm">
-  <div class="row">
-    <label>Mesa:
-      <select id="mesa">
-        <option value="1">Mesa 1</option>
-        <option value="2">Mesa 2</option>
-        <option value="3">Mesa 3</option>
-        <option value="4">Mesa 4</option>
-        <option value="5">Mesa 5</option>
-        <option value="6">Mesa 6</option>
-        <option value="7">Mesa 7</option>
-        <option value="8">Mesa 8</option>
-        <option value="9">Mesa 9</option>
-        <option value="10">Mesa 10</option>
-      </select>
-    </label>
-    <label>Mozo (opcional):
-      <input id="mozo" type="text" placeholder="escribí tu nombre">
-    </label>
-  </div>
-  <div class="row">
-    <label>Pedido (texto libre):</label><br>
-    <textarea id="pedido" rows="4" style="width:100%" placeholder="Ej: 2 cafés, 1 medialuna, 1 tostado sin sal..."></textarea>
-  </div>
-  <div class="row">
-    <button type="submit">Enviar pedido</button>
-    <button id="flushBtn" type="button">Enviar pendientes</button>
-  </div>
-</form>
+
+<div class="row">
+  <label>Mesa:
+    <select id="mesa">
+      <option value="1">Mesa 1</option>
+      <option value="2">Mesa 2</option>
+      <option value="3">Mesa 3</option>
+      <option value="4">Mesa 4</option>
+      <option value="5">Mesa 5</option>
+      <option value="6">Mesa 6</option>
+      <option value="7">Mesa 7</option>
+      <option value="8">Mesa 8</option>
+      <option value="9">Mesa 9</option>
+      <option value="10">Mesa 10</option>
+    </select>
+  </label>
+  <label>Mozo:
+    <input id="mozo" type="text" placeholder="Tu nombre" value="">
+  </label>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="menu">📋 Menú</button>
+  <button class="tab" data-tab="libre">✍️ Pedido Libre</button>
+</div>
+
+<div id="menu" class="tab-content active">
+  <input type="search" id="searchProduct" class="search-box" placeholder="🔍 Buscar producto...">
+  <div class="categories" id="categories"></div>
+  <div class="products" id="products"></div>
+</div>
+
+<div id="libre" class="tab-content">
+  <label>Pedido (texto libre):</label>
+  <textarea id="pedidoLibre" rows="4" placeholder="Ej: 2 cafés, 1 medialuna, 1 tostado sin sal..."></textarea>
+</div>
+
+<div class="cart" id="cart" style="display:none">
+  <h3>🛒 Carrito</h3>
+  <div id="cartItems"></div>
+  <div class="total" id="cartTotal">Total: $0</div>
+</div>
+
+<div class="row">
+  <button class="btn btn-primary" id="enviarBtn" style="width:100%">Enviar pedido</button>
+</div>
 
 <script>
 const API = location.origin;
+let categories = [];
+let products = [];
+let cart = [];
+let selectedCategory = null;
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try { await navigator.serviceWorker.register('/static/sw-mozo.js'); } catch(e){ console.log('SW error', e); }
   });
 }
+
 const QUEUE_KEY = 'mozo_order_queue_v1';
 function getQueue(){ try { return JSON.parse(localStorage.getItem(QUEUE_KEY)||'[]'); } catch(e){ return []; } }
 function setQueue(q){ localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); updateQueueUI(); }
 function enqueue(order){ const q = getQueue(); q.push({ts: Date.now(), order}); setQueue(q); }
+
 async function flushQueue(){
   const q = getQueue();
   if(!q.length) return alert("No hay pendientes.");
@@ -78,8 +126,9 @@ async function flushQueue(){
   }
   if (fail===0) setQueue([]);
   updateQueueUI();
-  alert(ok ? `Se enviaron ${ok} pedidos.` : "No se pudo enviar la cola.");
+  alert(ok ? `✅ Se enviaron ${ok} pedidos.` : "❌ No se pudo enviar la cola.");
 }
+
 function updateQueueUI(){
   const count = getQueue().length;
   const bar = document.getElementById('offlineBar');
@@ -87,27 +136,220 @@ function updateQueueUI(){
   if(qc) qc.textContent = 'Pendientes: ' + count;
   if(!navigator.onLine || count>0){ if(bar) bar.style.display = 'block'; } else { if(bar) bar.style.display = 'none'; }
 }
+
 window.addEventListener('online', flushQueue);
 window.addEventListener('offline', updateQueueUI);
 updateQueueUI();
 
-document.getElementById('flushBtn')?.addEventListener('click', flushQueue);
-
-document.getElementById('frm').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const mesa = parseInt(document.getElementById('mesa').value,10);
-  const mozo = document.getElementById('mozo').value.trim();
-  const libre = document.getElementById('pedido').value.trim();
-  const payload = { table_id: mesa, mozo_nombre: mozo, items: [{ product_id: null, cantidad: 1, notas: libre }] };
-  try{
-    const res = await fetch(API+"/orders",{ method:"POST", headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-    const js = await res.json();
-    if(js.ok){ alert("Pedido enviado #"+(js.order_id||"")); location.reload(); }
-    else { throw new Error("respuesta no OK"); }
-  }catch(err){
-    enqueue(payload);
-    alert("Sin conexión: el pedido quedó en cola y se enviará cuando vuelva Internet.");
-  } finally { updateQueueUI(); }
+// Tabs
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  });
 });
+
+// Cargar categorías y productos
+async function loadData(){
+  try {
+    const [catRes, prodRes] = await Promise.all([
+      fetch(API + '/categories'),
+      fetch(API + '/products')
+    ]);
+    categories = await catRes.json();
+    products = await prodRes.json();
+    renderCategories();
+    renderProducts();
+  } catch(e) {
+    console.error('Error cargando datos:', e);
+  }
+}
+
+function renderCategories(){
+  const el = document.getElementById('categories');
+  el.innerHTML = `
+    <button class="cat-btn ${!selectedCategory ? 'active' : ''}" data-cat="all">Todos</button>
+    ${categories.map(c => `
+      <button class="cat-btn ${selectedCategory === c.id ? 'active' : ''}" data-cat="${c.id}">${c.nombre}</button>
+    `).join('')}
+  `;
+  el.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedCategory = btn.dataset.cat === 'all' ? null : parseInt(btn.dataset.cat);
+      renderCategories();
+      renderProducts();
+    });
+  });
+}
+
+function renderProducts(){
+  const search = document.getElementById('searchProduct').value.toLowerCase();
+  let filtered = products;
+  if (selectedCategory) {
+    filtered = filtered.filter(p => p.category_id === selectedCategory);
+  }
+  if (search) {
+    filtered = filtered.filter(p => p.nombre.toLowerCase().includes(search));
+  }
+  
+  const el = document.getElementById('products');
+  if (filtered.length === 0) {
+    el.innerHTML = '<p style="text-align:center;opacity:0.6;padding:20px">No hay productos</p>';
+    return;
+  }
+  
+  el.innerHTML = filtered.map(p => `
+    <div class="product" data-id="${p.id}">
+      <div class="product-name">${p.nombre}</div>
+      <div class="product-price">${p.precio.toFixed(0)}</div>
+    </div>
+  `).join('');
+  
+  el.querySelectorAll('.product').forEach(prod => {
+    prod.addEventListener('click', () => {
+      const id = parseInt(prod.dataset.id);
+      addToCart(id);
+    });
+  });
+}
+
+document.getElementById('searchProduct').addEventListener('input', renderProducts);
+
+function addToCart(productId){
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+  
+  const existing = cart.find(c => c.id === productId);
+  if (existing) {
+    existing.cantidad++;
+  } else {
+    cart.push({
+      id: productId,
+      nombre: product.nombre,
+      precio: product.precio,
+      cantidad: 1,
+      notas: ''
+    });
+  }
+  renderCart();
+}
+
+function renderCart(){
+  const cartEl = document.getElementById('cart');
+  const itemsEl = document.getElementById('cartItems');
+  const totalEl = document.getElementById('cartTotal');
+  
+  if (cart.length === 0) {
+    cartEl.style.display = 'none';
+    return;
+  }
+  
+  cartEl.style.display = 'block';
+  
+  let total = 0;
+  itemsEl.innerHTML = cart.map((item, idx) => {
+    total += item.precio * item.cantidad;
+    return `
+      <div class="cart-item">
+        <div style="flex:1">
+          <div class="cart-item-name">${item.nombre}</div>
+          <div class="product-price">${item.precio.toFixed(0)} c/u</div>
+          <input type="text" class="cart-item-notes" placeholder="Notas (ej: sin azúcar)" 
+                 value="${item.notas}" data-idx="${idx}">
+        </div>
+        <div class="cart-item-qty">
+          <button data-idx="${idx}" data-action="minus">−</button>
+          <span style="min-width:30px;text-align:center;font-weight:600">${item.cantidad}</span>
+          <button data-idx="${idx}" data-action="plus">+</button>
+          <button data-idx="${idx}" data-action="remove" style="background:#ef4444;border-color:#ef4444">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  totalEl.textContent = `Total: ${total.toFixed(0)}`;
+  
+  itemsEl.querySelectorAll('button').forEach(btn => {
+    const idx = parseInt(btn.dataset.idx);
+    const action = btn.dataset.action;
+    btn.addEventListener('click', () => {
+      if (action === 'plus') cart[idx].cantidad++;
+      if (action === 'minus' && cart[idx].cantidad > 1) cart[idx].cantidad--;
+      if (action === 'remove') cart.splice(idx, 1);
+      renderCart();
+    });
+  });
+  
+  itemsEl.querySelectorAll('.cart-item-notes').forEach(input => {
+    const idx = parseInt(input.dataset.idx);
+    input.addEventListener('input', () => {
+      cart[idx].notas = input.value;
+    });
+  });
+}
+
+document.getElementById('enviarBtn').addEventListener('click', async () => {
+  const mesa = parseInt(document.getElementById('mesa').value);
+  const mozo = document.getElementById('mozo').value.trim();
+  
+  const activeTab = document.querySelector('.tab.active').dataset.tab;
+  
+  let payload;
+  
+  if (activeTab === 'menu') {
+    if (cart.length === 0) {
+      return alert('❌ El carrito está vacío');
+    }
+    payload = {
+      table_id: mesa,
+      user_name: mozo || null,
+      items: cart.map(c => ({
+        product_id: c.id,
+        cantidad: c.cantidad,
+        notas: c.notas || null
+      }))
+    };
+  } else {
+    const libre = document.getElementById('pedidoLibre').value.trim();
+    if (!libre) {
+      return alert('❌ Escribí el pedido');
+    }
+    payload = {
+      table_id: mesa,
+      user_name: mozo || null,
+      items: [{
+        product_id: null,
+        cantidad: 1,
+        notas: libre
+      }]
+    };
+  }
+  
+  try {
+    const res = await fetch(API + "/orders", {
+      method: "POST",
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const js = await res.json();
+    if (js.ok) {
+      alert(`✅ Pedido enviado #${js.order_id}`);
+      cart = [];
+      document.getElementById('pedidoLibre').value = '';
+      renderCart();
+    } else {
+      throw new Error("respuesta no OK");
+    }
+  } catch(err) {
+    enqueue(payload);
+    alert("⚠️ Sin conexión: el pedido quedó en cola y se enviará cuando vuelva Internet.");
+  } finally {
+    updateQueueUI();
+  }
+});
+
+loadData();
 </script>
 </body></html>

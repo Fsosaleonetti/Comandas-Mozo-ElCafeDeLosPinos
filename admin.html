@@ -1,0 +1,339 @@
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Administración — El De Los Pinos</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:20px;background:#111;color:#eee;}
+  .container{max-width:1200px;margin:0 auto;}
+  h1{margin-bottom:24px;}
+  .tabs{display:flex;gap:8px;margin:20px 0;border-bottom:2px solid #333;}
+  .tab{padding:12px 20px;cursor:pointer;border-radius:8px 8px 0 0;background:transparent;border:none;color:#999;font-size:16px;font-weight:500;}
+  .tab.active{background:rgba(255,255,255,.08);color:#eee;}
+  .tab-content{display:none;padding:20px 0;}
+  .tab-content.active{display:block;}
+  .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:20px;margin:16px 0;}
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:20px 0;}
+  .stat-card{background:#1a1a1a;border:1px solid #444;border-radius:12px;padding:20px;text-align:center;}
+  .stat-value{font-size:32px;font-weight:700;color:#10b981;margin:8px 0;}
+  .stat-label{font-size:14px;opacity:.7;}
+  .btn{padding:10px 20px;border-radius:10px;border:1px solid #444;background:rgba(255,255,255,.08);color:#eee;cursor:pointer;font-size:15px;font-weight:500;}
+  .btn:hover{filter:brightness(1.15);}
+  .btn-primary{background:#3b82f6;border-color:#3b82f6;color:#fff;}
+  .btn-success{background:#10b981;border-color:#10b981;color:#fff;}
+  .btn-danger{background:#ef4444;border-color:#ef4444;color:#fff;}
+  table{width:100%;border-collapse:collapse;margin:16px 0;}
+  th,td{padding:12px;text-align:left;border-bottom:1px solid #333;}
+  th{background:#1a1a1a;font-weight:600;color:#10b981;}
+  input,select,textarea{background:#222;color:#eee;border:1px solid #444;border-radius:8px;padding:10px;font-size:15px;font-family:inherit;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#3b82f6;}
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:16px 0;}
+  .form-group{display:flex;flex-direction:column;gap:6px;}
+  .form-group label{font-weight:500;font-size:14px;opacity:.9;}
+  .product-list{display:grid;gap:12px;margin:16px 0;}
+  .product-item{display:flex;justify-content:space-between;align-items:center;background:#1a1a1a;border:1px solid #444;border-radius:10px;padding:12px;}
+  .product-info{flex:1;}
+  .product-name{font-weight:600;font-size:16px;}
+  .product-price{color:#10b981;font-weight:600;}
+  .product-cat{font-size:13px;opacity:.7;}
+</style>
+</head><body>
+<div class="container">
+  <h1>🏪 Administración</h1>
+  
+  <div class="tabs">
+    <button class="tab active" data-tab="stats">📊 Estadísticas</button>
+    <button class="tab" data-tab="products">🍽️ Productos</button>
+    <button class="tab" data-tab="categories">📁 Categorías</button>
+  </div>
+  
+  <!-- ESTADÍSTICAS -->
+  <div id="stats" class="tab-content active">
+    <div class="card">
+      <h2>Resumen del Día</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Vendido</div>
+          <div class="stat-value" id="totalVendido">$0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Comandas</div>
+          <div class="stat-value" id="totalComandas">0</div>
+        </div>
+      </div>
+      
+      <button class="btn btn-success" id="exportBtn" style="margin:16px 0">
+        📥 Exportar Comandas del Día (CSV)
+      </button>
+    </div>
+    
+    <div class="card">
+      <h3>Por Mesa</h3>
+      <table id="tablePorMesa">
+        <thead><tr><th>Mesa</th><th>Total</th><th>Comandas</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    
+    <div class="card">
+      <h3>Por Mozo</h3>
+      <table id="tablePorMozo">
+        <thead><tr><th>Mozo</th><th>Total</th><th>Comandas</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- PRODUCTOS -->
+  <div id="products" class="tab-content">
+    <div class="card">
+      <h2>Agregar Producto</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre del producto</label>
+          <input type="text" id="prodNombre" placeholder="Ej: Café con leche">
+        </div>
+        <div class="form-group">
+          <label>Precio</label>
+          <input type="number" id="prodPrecio" placeholder="2500" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Categoría</label>
+          <select id="prodCategoria">
+            <option value="">Sin categoría</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="addProductBtn">Agregar Producto</button>
+    </div>
+    
+    <div class="card">
+      <h2>Productos Actuales</h2>
+      <div class="product-list" id="productsList"></div>
+    </div>
+  </div>
+  
+  <!-- CATEGORÍAS -->
+  <div id="categories" class="tab-content">
+    <div class="card">
+      <h2>Agregar Categoría</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre de la categoría</label>
+          <input type="text" id="catNombre" placeholder="Ej: Bebidas Calientes">
+        </div>
+        <div class="form-group">
+          <label>Orden (menor aparece primero)</label>
+          <input type="number" id="catOrden" placeholder="1" value="0">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="addCategoryBtn">Agregar Categoría</button>
+    </div>
+    
+    <div class="card">
+      <h2>Categorías Actuales</h2>
+      <div class="product-list" id="categoriesList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = location.origin;
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  });
+});
+
+// ESTADÍSTICAS
+async function loadStats(){
+  try {
+    const res = await fetch(API + '/stats/today');
+    const data = await res.json();
+    
+    document.getElementById('totalVendido').textContent = 'Total: ' + data.total_vendido.toFixed(0);
+    document.getElementById('totalComandas').textContent = data.total_comandas;
+    
+    const mesaBody = document.querySelector('#tablePorMesa tbody');
+    mesaBody.innerHTML = data.por_mesa.length ? data.por_mesa.map(m => `
+      <tr>
+        <td>${m.mesa || 'Sin mesa'}</td>
+        <td>${m.total.toFixed(0)}</td>
+        <td>${m.comandas}</td>
+      </tr>
+    `).join('') : '<tr><td colspan="3" style="text-align:center;opacity:.6">No hay datos</td></tr>';
+    
+    const mozoBody = document.querySelector('#tablePorMozo tbody');
+    mozoBody.innerHTML = data.por_mozo.length ? data.por_mozo.map(m => `
+      <tr>
+        <td>${m.mozo || 'Sin mozo'}</td>
+        <td>${m.total.toFixed(0)}</td>
+        <td>${m.comandas}</td>
+      </tr>
+    `).join('') : '<tr><td colspan="3" style="text-align:center;opacity:.6">No hay datos</td></tr>';
+  } catch(e) {
+    console.error('Error cargando estadísticas:', e);
+  }
+}
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  window.location.href = API + '/export/orders';
+});
+
+// PRODUCTOS
+let categories = [];
+let products = [];
+
+async function loadCategories(){
+  try {
+    const res = await fetch(API + '/categories');
+    categories = await res.json();
+    
+    const select = document.getElementById('prodCategoria');
+    select.innerHTML = '<option value="">Sin categoría</option>' + 
+      categories.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    
+    renderCategories();
+  } catch(e) {
+    console.error('Error cargando categorías:', e);
+  }
+}
+
+async function loadProducts(){
+  try {
+    const res = await fetch(API + '/products');
+    products = await res.json();
+    renderProducts();
+  } catch(e) {
+    console.error('Error cargando productos:', e);
+  }
+}
+
+function renderProducts(){
+  const list = document.getElementById('productsList');
+  if (products.length === 0) {
+    list.innerHTML = '<p style="text-align:center;opacity:.6;padding:20px">No hay productos cargados</p>';
+    return;
+  }
+  
+  list.innerHTML = products.map(p => `
+    <div class="product-item">
+      <div class="product-info">
+        <div class="product-name">${p.nombre}</div>
+        <div class="product-price">${p.precio.toFixed(0)}</div>
+        <div class="product-cat">${p.categoria || 'Sin categoría'}</div>
+      </div>
+      <button class="btn btn-danger" data-id="${p.id}" onclick="deleteProduct(${p.id})">Eliminar</button>
+    </div>
+  `).join('');
+}
+
+function renderCategories(){
+  const list = document.getElementById('categoriesList');
+  if (categories.length === 0) {
+    list.innerHTML = '<p style="text-align:center;opacity:.6;padding:20px">No hay categorías creadas</p>';
+    return;
+  }
+  
+  list.innerHTML = categories.map(c => `
+    <div class="product-item">
+      <div class="product-info">
+        <div class="product-name">${c.nombre}</div>
+        <div class="product-cat">Orden: ${c.orden}</div>
+      </div>
+      <button class="btn btn-danger" onclick="deleteCategory(${c.id})">Eliminar</button>
+    </div>
+  `).join('');
+}
+
+document.getElementById('addProductBtn').addEventListener('click', async () => {
+  const nombre = document.getElementById('prodNombre').value.trim();
+  const precio = parseFloat(document.getElementById('prodPrecio').value);
+  const category_id = document.getElementById('prodCategoria').value;
+  
+  if (!nombre || !precio) {
+    return alert('❌ Completa nombre y precio');
+  }
+  
+  try {
+    await fetch(API + '/products', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        nombre,
+        precio,
+        category_id: category_id ? parseInt(category_id) : null
+      })
+    });
+    
+    document.getElementById('prodNombre').value = '';
+    document.getElementById('prodPrecio').value = '';
+    alert('✅ Producto agregado');
+    loadProducts();
+  } catch(e) {
+    alert('❌ Error al agregar producto');
+  }
+});
+
+document.getElementById('addCategoryBtn').addEventListener('click', async () => {
+  const nombre = document.getElementById('catNombre').value.trim();
+  const orden = parseInt(document.getElementById('catOrden').value || '0');
+  
+  if (!nombre) {
+    return alert('❌ Escribe el nombre de la categoría');
+  }
+  
+  try {
+    await fetch(API + '/categories', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ nombre, orden })
+    });
+    
+    document.getElementById('catNombre').value = '';
+    document.getElementById('catOrden').value = '0';
+    alert('✅ Categoría agregada');
+    loadCategories();
+    loadProducts();
+  } catch(e) {
+    alert('❌ Error al agregar categoría');
+  }
+});
+
+async function deleteProduct(id){
+  if (!confirm('¿Seguro que querés eliminar este producto?')) return;
+  
+  try {
+    await fetch(API + '/products/' + id, { method: 'DELETE' });
+    alert('✅ Producto eliminado');
+    loadProducts();
+  } catch(e) {
+    alert('❌ Error al eliminar producto');
+  }
+}
+
+async function deleteCategory(id){
+  if (!confirm('¿Seguro? Los productos de esta categoría quedarán sin categoría.')) return;
+  
+  try {
+    await fetch(API + '/categories/' + id, { method: 'DELETE' });
+    alert('✅ Categoría eliminada');
+    loadCategories();
+    loadProducts();
+  } catch(e) {
+    alert('❌ Error al eliminar categoría');
+  }
+}
+
+// Cargar datos iniciales
+loadStats();
+loadCategories();
+loadProducts();
+
+// Refrescar stats cada 30 seg
+setInterval(loadStats, 30000);
+</script>
+</body></html>document.getElementById('totalVendido').textContent = 'Total: ' + data.total_vendido.toFixed(0);document.getElementById('totalVendido').textContent = 'Total: ' + data.total_vendido.toFixed(0);document.getElementById('totalVendido').textContent = 'Total: ' + data.total_vendido.toFixed(0);

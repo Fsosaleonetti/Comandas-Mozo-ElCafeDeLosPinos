@@ -2,10 +2,11 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime
-import sqlite3, json, os
+import sqlite3, json, os, io, csv
 
 DB = "mozo.db"
 app = FastAPI(title="Mozo-Cocina MVP")
@@ -32,25 +33,56 @@ def init_db():
     CREATE TABLE IF NOT EXISTS tables (
         id INTEGER PRIMARY KEY, nombre TEXT
     );
+    CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY, nombre TEXT, orden INTEGER DEFAULT 0
+    );
     CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY, nombre TEXT, precio REAL, activo INTEGER DEFAULT 1
+        id INTEGER PRIMARY KEY, 
+        nombre TEXT, 
+        precio REAL, 
+        category_id INTEGER,
+        activo INTEGER DEFAULT 1,
+        FOREIGN KEY (category_id) REFERENCES categories(id)
     );
     CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY,
         table_id INTEGER,
         user_id INTEGER,
         mozo_nombre TEXT,
+        total REAL DEFAULT 0,
         anulada INTEGER DEFAULT 0,
         ts TEXT
     );
     CREATE TABLE IF NOT EXISTS order_items (
-        id INTEGER PRIMARY KEY, order_id INTEGER, product_id INTEGER,
-        cantidad INTEGER, notas TEXT
+        id INTEGER PRIMARY KEY, 
+        order_id INTEGER, 
+        product_id INTEGER,
+        product_nombre TEXT,
+        product_precio REAL,
+        cantidad INTEGER, 
+        notas TEXT
+    );
+    CREATE TABLE IF NOT EXISTS notas_generales (
+        id INTEGER PRIMARY KEY,
+        contenido TEXT,
+        ts TEXT
     );
     """)
-    # Migración segura: agregar columna si no existe
+    # Migraciones seguras
     try:
         cur.execute("ALTER TABLE orders ADD COLUMN mozo_nombre TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("ALTER TABLE orders ADD COLUMN total REAL DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("ALTER TABLE order_items ADD COLUMN product_nombre TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("ALTER TABLE order_items ADD COLUMN product_precio REAL")
     except sqlite3.OperationalError:
         pass
     con.commit(); con.close()
@@ -59,7 +91,7 @@ init_db()
 
 # --- Pydantic ---
 class ItemIn(BaseModel):
-    product_id: Optional[int] = None      # permite item libre
+    product_id: Optional[int] = None
     cantidad: int = 1
     notas: Optional[str] = None
 
@@ -68,6 +100,15 @@ class OrderIn(BaseModel):
     user_id: Optional[int] = Field(default=None)
     user_name: Optional[str] = Field(default=None)
     items: List[ItemIn]
+
+class ProductIn(BaseModel):
+    nombre: str
+    precio: float
+    category_id: Optional[int] = None
+
+class CategoryIn(BaseModel):
+    nombre: str
+    orden: int = 0
 
 # --- WebSocket Hub ---
 class Hub:
@@ -88,10 +129,60 @@ hub = Hub()
 
 # --- API ---
 @app.get("/products")
-def products():
+def products(category_id: Optional[int] = None):
     con=db(); cur=con.cursor()
-    rows = cur.execute("SELECT id,nombre,precio FROM products WHERE activo=1 ORDER BY nombre").fetchall()
+    if category_id:
+        rows = cur.execute("""SELECT p.id, p.nombre, p.precio, p.category_id, c.nombre as categoria
+                              FROM products p 
+                              LEFT JOIN categories c ON c.id = p.category_id
+                              WHERE p.activo=1 AND p.category_id=? 
+                              ORDER BY p.nombre""", (category_id,)).fetchall()
+    else:
+        rows = cur.execute("""SELECT p.id, p.nombre, p.precio, p.category_id, c.nombre as categoria
+                              FROM products p 
+                              LEFT JOIN categories c ON c.id = p.category_id
+                              WHERE p.activo=1 
+                              ORDER BY p.nombre""").fetchall()
     con.close(); return [dict(r) for r in rows]
+
+@app.post("/products")
+def create_product(payload: ProductIn):
+    con=db(); cur=con.cursor()
+    cur.execute("INSERT INTO products(nombre, precio, category_id) VALUES(?,?,?)",
+                (payload.nombre, payload.precio, payload.category_id))
+    con.commit()
+    pid = cur.lastrowid
+    con.close()
+    return {"ok": True, "id": pid}
+
+@app.delete("/products/{product_id}")
+def delete_product(product_id: int):
+    con=db(); cur=con.cursor()
+    cur.execute("UPDATE products SET activo=0 WHERE id=?", (product_id,))
+    con.commit(); con.close()
+    return {"ok": True}
+
+@app.get("/categories")
+def categories():
+    con=db(); cur=con.cursor()
+    rows = cur.execute("SELECT id, nombre, orden FROM categories ORDER BY orden, nombre").fetchall()
+    con.close(); return [dict(r) for r in rows]
+
+@app.post("/categories")
+def create_category(payload: CategoryIn):
+    con=db(); cur=con.cursor()
+    cur.execute("INSERT INTO categories(nombre, orden) VALUES(?,?)", (payload.nombre, payload.orden))
+    con.commit()
+    cid = cur.lastrowid
+    con.close()
+    return {"ok": True, "id": cid}
+
+@app.delete("/categories/{category_id}")
+def delete_category(category_id: int):
+    con=db(); cur=con.cursor()
+    cur.execute("DELETE FROM categories WHERE id=?", (category_id,))
+    con.commit(); con.close()
+    return {"ok": True}
 
 @app.get("/tables")
 def tables():
@@ -114,17 +205,38 @@ async def create_order(payload: OrderIn):
         raise HTTPException(400, "Pedido sin items")
     con=db(); cur=con.cursor()
     now = datetime.utcnow().isoformat()
-    cur.execute("""INSERT INTO orders(table_id,user_id,mozo_nombre,anulada,ts)
-                   VALUES(?,?,?,?,?)""",
+    
+    # Calcular total
+    total = 0
+    items_data = []
+    for it in payload.items:
+        if it.product_id:
+            prod = cur.execute("SELECT nombre, precio FROM products WHERE id=?", (it.product_id,)).fetchone()
+            if prod:
+                nombre = prod["nombre"]
+                precio = prod["precio"]
+                total += precio * it.cantidad
+            else:
+                nombre = "Producto desconocido"
+                precio = 0
+        else:
+            nombre = "Pedido libre"
+            precio = 0
+        items_data.append((nombre, precio, it.cantidad, it.notas))
+    
+    cur.execute("""INSERT INTO orders(table_id,user_id,mozo_nombre,total,anulada,ts)
+                   VALUES(?,?,?,?,?,?)""",
                 (payload.table_id,
                  payload.user_id if payload.user_id is not None else None,
                  payload.user_name if payload.user_name else None,
-                 0, now))
+                 total, 0, now))
     order_id = cur.lastrowid
-    for it in payload.items:
-        cur.execute("""INSERT INTO order_items(order_id,product_id,cantidad,notas)
-                       VALUES(?,?,?,?)""",
-                    (order_id, it.product_id, it.cantidad, it.notas))
+    
+    for nombre, precio, cantidad, notas in items_data:
+        cur.execute("""INSERT INTO order_items(order_id,product_id,product_nombre,product_precio,cantidad,notas)
+                       VALUES(?,?,?,?,?,?)""",
+                    (order_id, None, nombre, precio, cantidad, notas))
+    
     con.commit(); con.close()
     await hub.broadcast("kitchen", {"type":"new_order","order_id":order_id})
     return {"ok": True, "order_id": order_id}
@@ -132,7 +244,7 @@ async def create_order(payload: OrderIn):
 @app.get("/orders")
 def list_orders(anuladas: int = 0):
     con=db(); cur=con.cursor()
-    rows = cur.execute("""SELECT o.id, o.table_id, o.user_id, o.mozo_nombre, o.anulada, o.ts,
+    rows = cur.execute("""SELECT o.id, o.table_id, o.user_id, o.mozo_nombre, o.total, o.anulada, o.ts,
                                  t.nombre AS mesa, u.nombre AS mozo
                           FROM orders o
                           LEFT JOIN tables t ON t.id=o.table_id
@@ -142,11 +254,9 @@ def list_orders(anuladas: int = 0):
     data=[]
     for r in rows:
         it = con.execute("""
-            SELECT oi.id,
-                   COALESCE(p.nombre,'Pedido libre') AS nombre,
+            SELECT oi.id, oi.product_nombre as nombre, oi.product_precio as precio,
                    oi.cantidad, oi.notas
             FROM order_items oi
-            LEFT JOIN products p ON p.id=oi.product_id
             WHERE oi.order_id=?""", (r["id"],)).fetchall()
         mozo_final = r["mozo_nombre"] if r["mozo_nombre"] else (r["mozo"] or r["user_id"])
         base = {**dict(r)}
@@ -155,29 +265,15 @@ def list_orders(anuladas: int = 0):
     con.close(); return data
 
 @app.post("/orders/{order_id}/cancel")
-def cancel_order(order_id:int):
+async def cancel_order(order_id:int):
     con=db(); cur=con.cursor()
-    # Elimina la verificación de PIN
     cur.execute("UPDATE orders SET anulada=1 WHERE id=?", (order_id,))
     con.commit(); con.close()
+    await hub.broadcast("kitchen", {"type":"order_cancelled","order_id":order_id})
     return {"ok": True, "order_id": order_id, "anulada": 1}
 
 @app.put("/orders/{order_id}")
-def update_order(order_id: int, payload: dict = Body(...)):
-    """
-    Actualizar una comanda desde cocina.
-    payload = {
-      "admin_pin": "1234",
-      "table_id": 1,
-      "mozo_nombre": "Fabri",
-      "items": [
-        {"id": 10, "cantidad": 2, "notas": "sin azúcar"},
-        {"id": 11, "delete": true}
-      ]
-    }
-    - Si viene delete:true se elimina ese item de la comanda.
-    - Si cantidad es 0, también elimina el item.
-    """
+async def update_order(order_id: int, payload: dict = Body(...)):
     con=db(); cur=con.cursor()
     admin_pin = payload.get("admin_pin")
     admin = cur.execute("SELECT id FROM users WHERE rol='admin' AND pin=?", (admin_pin,)).fetchone()
@@ -187,10 +283,12 @@ def update_order(order_id: int, payload: dict = Body(...)):
     row = cur.execute("SELECT id, anulada FROM orders WHERE id=?", (order_id,)).fetchone()
     if not row:
         con.close(); raise HTTPException(status_code=404, detail="Pedido no existe")
+    
     if "table_id" in payload:
         cur.execute("UPDATE orders SET table_id=? WHERE id=?", (payload["table_id"], order_id))
     if "mozo_nombre" in payload:
         cur.execute("UPDATE orders SET mozo_nombre=? WHERE id=?", (payload["mozo_nombre"], order_id))
+    
     items = payload.get("items") or []
     for it in items:
         iid = it.get("id")
@@ -201,59 +299,146 @@ def update_order(order_id: int, payload: dict = Body(...)):
         if "cantidad" in it or "notas" in it:
             cur.execute("UPDATE order_items SET cantidad=COALESCE(?, cantidad), notas=COALESCE(?, notas) WHERE id=? AND order_id=?",
                         (it.get("cantidad"), it.get("notas"), iid, order_id))
-    con.commit()
-    # Devolver la comanda actualizada
-    rows = cur.execute("""SELECT o.id, o.table_id, o.user_id, o.mozo_nombre, o.anulada, o.ts,
-                                 t.nombre AS mesa, u.nombre AS mozo
-                          FROM orders o
-                          LEFT JOIN tables t ON t.id=o.table_id
-                          LEFT JOIN users u ON u.id=o.user_id
-                          WHERE o.id=?""", (order_id,)).fetchall()
-    data=[]
-    for r in rows:
-        it = con.execute("""
-            SELECT oi.id,
-                   COALESCE(p.nombre,'Pedido libre') AS nombre,
-                   oi.cantidad, oi.notas
-            FROM order_items oi
-            LEFT JOIN products p ON p.id=oi.product_id
-            WHERE oi.order_id=?""", (r[0],)).fetchall()
-        base = { "id": r[0], "table_id": r[1], "user_id": r[2], "mozo_nombre": r[3], "anulada": r[4], "ts": r[5], "mesa": r[6], "mozo": r[7] }
-        data.append({**base, "items":[{"id":x[0],"nombre":x[1],"cantidad":x[2],"notas":x[3]} for x in it]})
-    con.close()
-    return {"ok": True, "order": data[0] if data else None}
-
+    
+    # Recalcular total
+    total = cur.execute("""SELECT SUM(product_precio * cantidad) as total 
+                          FROM order_items WHERE order_id=?""", (order_id,)).fetchone()["total"] or 0
+    cur.execute("UPDATE orders SET total=? WHERE id=?", (total, order_id))
+    
+    con.commit(); con.close()
+    await hub.broadcast("kitchen", {"type":"order_updated","order_id":order_id})
+    return {"ok": True, "order_id": order_id}
 
 @app.post("/orders/{order_id}/uncancel")
-def uncancel_order(order_id:int):
+async def uncancel_order(order_id:int):
     con=db(); cur=con.cursor()
     row = cur.execute("SELECT id FROM orders WHERE id=?", (order_id,)).fetchone()
     if not row:
         con.close(); raise HTTPException(status_code=404, detail="Pedido no existe")
     cur.execute("UPDATE orders SET anulada=0 WHERE id=?", (order_id,))
     con.commit(); con.close()
-    # Avisar a cocina por WS
-    try:
-        import anyio
-        anyio.from_thread.run(hub.broadcast, {"type":"order_restored","order_id":order_id})
-    except Exception:
-        pass
+    await hub.broadcast("kitchen", {"type":"order_restored","order_id":order_id})
     return {"ok": True, "order_id": order_id, "anulada": 0}
 
+# --- Notas Generales ---
+@app.get("/notas")
+def get_notas():
+    con=db(); cur=con.cursor()
+    rows = cur.execute("SELECT id, contenido, ts FROM notas_generales ORDER BY id DESC LIMIT 50").fetchall()
+    con.close(); return [dict(r) for r in rows]
 
-# --- Reset al iniciar: limpia comandas y sube versión de SW (Mozo) ---
+@app.post("/notas")
+async def create_nota(payload: dict = Body(...)):
+    con=db(); cur=con.cursor()
+    contenido = payload.get("contenido", "")
+    now = datetime.utcnow().isoformat()
+    cur.execute("INSERT INTO notas_generales(contenido, ts) VALUES(?,?)", (contenido, now))
+    con.commit()
+    nid = cur.lastrowid
+    con.close()
+    await hub.broadcast("kitchen", {"type":"new_nota","id":nid})
+    return {"ok": True, "id": nid}
+
+@app.delete("/notas/{nota_id}")
+async def delete_nota(nota_id: int):
+    con=db(); cur=con.cursor()
+    cur.execute("DELETE FROM notas_generales WHERE id=?", (nota_id,))
+    con.commit(); con.close()
+    await hub.broadcast("kitchen", {"type":"nota_deleted","id":nota_id})
+    return {"ok": True}
+
+# --- Exportar a Excel (CSV) ---
+@app.get("/export/orders")
+def export_orders(fecha: Optional[str] = None):
+    con=db(); cur=con.cursor()
+    if fecha:
+        rows = cur.execute("""
+            SELECT o.id, o.ts, t.nombre as mesa, o.mozo_nombre, o.total, o.anulada
+            FROM orders o
+            LEFT JOIN tables t ON t.id=o.table_id
+            WHERE DATE(o.ts) = ?
+            ORDER BY o.id
+        """, (fecha,)).fetchall()
+    else:
+        today = datetime.utcnow().date().isoformat()
+        rows = cur.execute("""
+            SELECT o.id, o.ts, t.nombre as mesa, o.mozo_nombre, o.total, o.anulada
+            FROM orders o
+            LEFT JOIN tables t ON t.id=o.table_id
+            WHERE DATE(o.ts) = ?
+            ORDER BY o.id
+        """, (today,)).fetchall()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['ID', 'Fecha/Hora', 'Mesa', 'Mozo', 'Total', 'Anulada'])
+    
+    for r in rows:
+        writer.writerow([r['id'], r['ts'], r['mesa'], r['mozo_nombre'], r['total'], 'SI' if r['anulada'] else 'NO'])
+    
+    con.close()
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=comandas_{datetime.utcnow().date()}.csv"}
+    )
+
+# --- Estadísticas ---
+@app.get("/stats/today")
+def stats_today():
+    con=db(); cur=con.cursor()
+    today = datetime.utcnow().date().isoformat()
+    
+    total_vendido = cur.execute("""
+        SELECT SUM(total) as total FROM orders 
+        WHERE DATE(ts) = ? AND anulada=0
+    """, (today,)).fetchone()["total"] or 0
+    
+    total_comandas = cur.execute("""
+        SELECT COUNT(*) as count FROM orders 
+        WHERE DATE(ts) = ? AND anulada=0
+    """, (today,)).fetchone()["count"]
+    
+    por_mesa = cur.execute("""
+        SELECT t.nombre as mesa, SUM(o.total) as total, COUNT(*) as comandas
+        FROM orders o
+        LEFT JOIN tables t ON t.id=o.table_id
+        WHERE DATE(o.ts) = ? AND o.anulada=0
+        GROUP BY o.table_id
+        ORDER BY total DESC
+    """, (today,)).fetchall()
+    
+    por_mozo = cur.execute("""
+        SELECT mozo_nombre as mozo, SUM(total) as total, COUNT(*) as comandas
+        FROM orders
+        WHERE DATE(ts) = ? AND anulada=0 AND mozo_nombre IS NOT NULL
+        GROUP BY mozo_nombre
+        ORDER BY total DESC
+    """, (today,)).fetchall()
+    
+    con.close()
+    return {
+        "fecha": today,
+        "total_vendido": total_vendido,
+        "total_comandas": total_comandas,
+        "por_mesa": [dict(r) for r in por_mesa],
+        "por_mozo": [dict(r) for r in por_mozo]
+    }
+
+# --- Reset al iniciar ---
 @app.on_event("startup")
 def on_startup_reset():
     try:
         con = db(); cur = con.cursor()
         cur.execute("DELETE FROM order_items")
         cur.execute("DELETE FROM orders")
+        cur.execute("DELETE FROM notas_generales")
         con.commit(); con.close()
         print("Reset de comandas OK")
     except Exception as e:
         print("WARN reset DB:", e)
 
-    # Forzar actualización de la PWA de Mozo cambiando el nombre del caché en el SW
     try:
         import re, time, pathlib
         ts = str(int(time.time()))
@@ -277,8 +462,7 @@ async def ws_kitchen(ws: WebSocket):
     except WebSocketDisconnect:
         hub.remove(ws, "kitchen")
 
-
-# --- No cache para estáticos (evita 304/caché agresiva) ---
+# --- No cache ---
 @app.middleware("http")
 async def add_nocache_headers(request, call_next):
     response = await call_next(request)
@@ -294,4 +478,4 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/")
 def root():
-    return {"ok": True, "msg": "API lista. /static/mozo.html /static/cocina.html /docs"}
+    return {"ok": True, "msg": "API lista. /static/index.html /docs"}
