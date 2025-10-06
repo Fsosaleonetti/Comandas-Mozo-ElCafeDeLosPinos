@@ -1,99 +1,98 @@
 <!doctype html><html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Administración — El De Los Pinos</title>
+<title>Administración – El Café de los Pinos</title>
 <style>
-  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:20px;background:#111;color:#eee;}
-  .container{max-width:1200px;margin:0 auto;}
-  h1{margin-bottom:24px;}
-  .tabs{display:flex;gap:8px;margin:20px 0;border-bottom:2px solid #333;}
+  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:0;background:#111;color:#eee;}
+  .navbar{background:#1a1a1a;border-bottom:2px solid #333;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+  .navbar-brand{font-size:18px;font-weight:700;color:#10b981}
+  .navbar-links{display:flex;gap:12px}
+  .navbar-links a{color:#eee;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:14px;transition:background 0.2s}
+  .navbar-links a:hover{background:rgba(255,255,255,.1)}
+  .navbar-links a.active{background:#10b981;color:#000}
+  
+  .login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);display:flex;justify-content:center;align-items:center;z-index:9999}
+  .login-box{background:#1a1a1a;border:2px solid #333;border-radius:14px;padding:32px;max-width:400px;width:90%;text-align:center}
+  .login-box h2{margin:0 0 24px 0;color:#10b981}
+  .login-box input{width:100%;box-sizing:border-box;background:#222;color:#eee;border:1px solid #444;border-radius:8px;padding:12px;font-size:16px;text-align:center;letter-spacing:2px;margin:16px 0}
+  .login-box button{width:100%;padding:12px;background:#10b981;border:none;border-radius:8px;color:#fff;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px}
+  .login-box button:hover{background:#059669}
+  .login-error{color:#ef4444;margin-top:8px;font-size:14px}
+  
+  .container{max-width:1200px;margin:0 auto;padding:20px;}
+  .tabs{display:flex;gap:8px;margin:20px 0;border-bottom:2px solid #333;flex-wrap:wrap;}
   .tab{padding:12px 20px;cursor:pointer;border-radius:8px 8px 0 0;background:transparent;border:none;color:#999;font-size:16px;font-weight:500;}
   .tab.active{background:rgba(255,255,255,.08);color:#eee;}
   .tab-content{display:none;padding:20px 0;}
   .tab-content.active{display:block;}
   .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:20px;margin:16px 0;}
-  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:20px 0;}
-  .stat-card{background:#1a1a1a;border:1px solid #444;border-radius:12px;padding:20px;text-align:center;}
-  .stat-value{font-size:32px;font-weight:700;color:#10b981;margin:8px 0;}
-  .stat-label{font-size:14px;opacity:.7;}
   .btn{padding:10px 20px;border-radius:10px;border:1px solid #444;background:rgba(255,255,255,.08);color:#eee;cursor:pointer;font-size:15px;font-weight:500;}
   .btn:hover{filter:brightness(1.15);}
   .btn-primary{background:#3b82f6;border-color:#3b82f6;color:#fff;}
   .btn-success{background:#10b981;border-color:#10b981;color:#fff;}
   .btn-danger{background:#ef4444;border-color:#ef4444;color:#fff;}
-  table{width:100%;border-collapse:collapse;margin:16px 0;}
-  th,td{padding:12px;text-align:left;border-bottom:1px solid #333;}
-  th{background:#1a1a1a;font-weight:600;color:#10b981;}
-  input,select,textarea{background:#222;color:#eee;border:1px solid #444;border-radius:8px;padding:10px;font-size:15px;font-family:inherit;}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:#3b82f6;}
   .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:16px 0;}
   .form-group{display:flex;flex-direction:column;gap:6px;}
   .form-group label{font-weight:500;font-size:14px;opacity:.9;}
-  .product-list{display:grid;gap:12px;margin:16px 0;}
-  .product-item{display:flex;justify-content:space-between;align-items:center;background:#1a1a1a;border:1px solid #444;border-radius:10px;padding:12px;}
-  .product-info{flex:1;}
-  .product-name{font-weight:600;font-size:16px;}
-  .product-price{color:#10b981;font-weight:600;}
-  .product-cat{font-size:13px;opacity:.7;}
+  input,select,textarea{background:#222;color:#eee;border:1px solid #444;border-radius:8px;padding:10px;font-size:15px;font-family:inherit;}
+  
+  .category-section{background:#1a1a1a;border:1px solid #444;border-radius:10px;padding:16px;margin:12px 0;}
+  .category-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid #444;margin-bottom:12px}
+  .category-title{font-size:18px;font-weight:600;color:#10b981}
+  .product-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+  .product-card{background:#222;border:1px solid #444;border-radius:8px;padding:12px}
+  .product-name{font-weight:600;margin-bottom:4px}
+  .product-price{color:#10b981;font-weight:600;margin-bottom:8px}
+  .product-actions{display:flex;gap:6px}
+  .product-actions button{padding:4px 10px;font-size:13px}
+  
+  .toast{position:fixed;bottom:20px;right:20px;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:10000;animation:slideIn 0.3s ease;}
+  .toast.error{background:#ef4444;}
+  @keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}
 </style>
 </head><body>
-<div class="container">
-  <h1>🏪 Administración</h1>
+
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-box">
+    <h2>🔒 Acceso Admin</h2>
+    <p style="opacity:.7;margin-bottom:16px">Ingresa el PIN para continuar</p>
+    <input type="password" id="pinInput" placeholder="PIN" maxlength="10" autofocus>
+    <button id="loginBtn">Ingresar</button>
+    <div id="loginError" class="login-error" style="display:none"></div>
+  </div>
+</div>
+
+<nav class="navbar" style="display:none" id="navbar">
+  <div class="navbar-brand">Admin</div>
+  <div class="navbar-links">
+    <a href="./mozo.html">Mozo</a>
+    <a href="./cocina.html">Cocina</a>
+    <a href="./admin.html" class="active">Admin</a>
+    <button class="btn btn-danger" id="logoutBtn" style="padding:6px 12px;font-size:14px">Cerrar Sesión</button>
+  </div>
+</nav>
+
+<div class="container" style="display:none" id="mainContent">
+  <h1>Administración</h1>
   
   <div class="tabs">
-    <button class="tab active" data-tab="stats">📊 Estadísticas</button>
-    <button class="tab" data-tab="products">🍽️ Productos</button>
-    <button class="tab" data-tab="categories">📁 Categorías</button>
-  </div>
-  
-  <!-- ESTADÍSTICAS -->
-  <div id="stats" class="tab-content active">
-    <div class="card">
-      <h2>Resumen del Día</h2>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Total Vendido</div>
-          <div class="stat-value" id="totalVendido">$0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Total Comandas</div>
-          <div class="stat-value" id="totalComandas">0</div>
-        </div>
-      </div>
-      
-      <button class="btn btn-success" id="exportBtn" style="margin:16px 0">
-        📥 Exportar Comandas del Día (CSV)
-      </button>
-    </div>
-    
-    <div class="card">
-      <h3>Por Mesa</h3>
-      <table id="tablePorMesa">
-        <thead><tr><th>Mesa</th><th>Total</th><th>Comandas</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    
-    <div class="card">
-      <h3>Por Mozo</h3>
-      <table id="tablePorMozo">
-        <thead><tr><th>Mozo</th><th>Total</th><th>Comandas</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
+    <button class="tab active" data-tab="products">Productos</button>
+    <button class="tab" data-tab="categories">Categorías</button>
+    <button class="tab" data-tab="modifiers">Modificadores</button>
+    <button class="tab" data-tab="stats">Estadísticas</button>
   </div>
   
   <!-- PRODUCTOS -->
-  <div id="products" class="tab-content">
+  <div id="products" class="tab-content active">
     <div class="card">
       <h2>Agregar Producto</h2>
       <div class="form-row">
         <div class="form-group">
-          <label>Nombre del producto</label>
+          <label>Nombre del producto *</label>
           <input type="text" id="prodNombre" placeholder="Ej: Café con leche">
         </div>
         <div class="form-group">
-          <label>Precio</label>
-          <input type="number" id="prodPrecio" placeholder="2500" step="0.01">
+          <label>Precio *</label>
+          <input type="number" id="prodPrecio" placeholder="2500" step="0.01" min="0">
         </div>
         <div class="form-group">
           <label>Categoría</label>
@@ -106,8 +105,9 @@
     </div>
     
     <div class="card">
-      <h2>Productos Actuales</h2>
-      <div class="product-list" id="productsList"></div>
+      <h2>Productos por Categoría</h2>
+      <input type="search" id="searchProductos" placeholder="Buscar productos..." style="width:100%;margin-bottom:16px">
+      <div id="productsByCategory"></div>
     </div>
   </div>
   
@@ -117,12 +117,12 @@
       <h2>Agregar Categoría</h2>
       <div class="form-row">
         <div class="form-group">
-          <label>Nombre de la categoría</label>
+          <label>Nombre de la categoría *</label>
           <input type="text" id="catNombre" placeholder="Ej: Bebidas Calientes">
         </div>
         <div class="form-group">
           <label>Orden (menor aparece primero)</label>
-          <input type="number" id="catOrden" placeholder="1" value="0">
+          <input type="number" id="catOrden" placeholder="1" value="0" min="0">
         </div>
       </div>
       <button class="btn btn-primary" id="addCategoryBtn">Agregar Categoría</button>
@@ -130,13 +130,137 @@
     
     <div class="card">
       <h2>Categorías Actuales</h2>
-      <div class="product-list" id="categoriesList"></div>
+      <div id="categoriesList"></div>
+    </div>
+  </div>
+  
+  <!-- MODIFICADORES -->
+  <div id="modifiers" class="tab-content">
+    <div class="card">
+      <h2>Agregar Modificador</h2>
+      <p style="opacity:.7;font-size:14px">Los modificadores permiten personalizar productos (ej: "Sin azúcar", "Extra shot", etc.)</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre del modificador *</label>
+          <input type="text" id="modNombre" placeholder="Ej: Sin azúcar">
+        </div>
+        <div class="form-group">
+          <label>Precio extra (opcional)</label>
+          <input type="number" id="modPrecio" placeholder="0" step="0.01" min="0" value="0">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="addModifierBtn">Agregar Modificador</button>
+    </div>
+    
+    <div class="card">
+      <h2>Modificadores Actuales</h2>
+      <div id="modifiersList"></div>
+    </div>
+  </div>
+  
+  <!-- ESTADÍSTICAS -->
+  <div id="stats" class="tab-content">
+    <div class="card">
+      <h2>Resumen del Día</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:20px 0">
+        <div style="background:#1a1a1a;border:1px solid #444;border-radius:12px;padding:20px;text-align:center">
+          <div style="opacity:.7;font-size:14px">Total Vendido</div>
+          <div id="totalVendido" style="font-size:32px;font-weight:700;color:#10b981;margin:8px 0">$0</div>
+        </div>
+        <div style="background:#1a1a1a;border:1px solid #444;border-radius:12px;padding:20px;text-align:center">
+          <div style="opacity:.7;font-size:14px">Total Comandas</div>
+          <div id="totalComandas" style="font-size:32px;font-weight:700;color:#10b981;margin:8px 0">0</div>
+        </div>
+      </div>
+      <button class="btn btn-success" id="exportBtn" style="margin:16px 0">Exportar Comandas del Día (CSV)</button>
     </div>
   </div>
 </div>
 
 <script>
 const API = location.origin;
+let isAuthenticated = false;
+let categories = [];
+let products = [];
+let modifiers = [];
+
+// Toast
+function showToast(msg, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// Login
+async function verifyPin(pin) {
+  try {
+    const res = await fetch(API + '/api/admin/verify-pin', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({pin})
+    });
+    
+    if (res.ok) {
+      isAuthenticated = true;
+      sessionStorage.setItem('admin_auth', 'true');
+      showLogin(false);
+      loadAllData();
+      return true;
+    } else {
+      return false;
+    }
+  } catch(e) {
+    return false;
+  }
+}
+
+function showLogin(show) {
+  document.getElementById('loginOverlay').style.display = show ? 'flex' : 'none';
+  document.getElementById('navbar').style.display = show ? 'none' : 'flex';
+  document.getElementById('mainContent').style.display = show ? 'none' : 'block';
+}
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const pin = document.getElementById('pinInput').value;
+  const errorEl = document.getElementById('loginError');
+  
+  if (!pin) {
+    errorEl.textContent = 'Ingresa el PIN';
+    errorEl.style.display = 'block';
+    return;
+  }
+  
+  const valid = await verifyPin(pin);
+  if (valid) {
+    errorEl.style.display = 'none';
+  } else {
+    errorEl.textContent = 'PIN incorrecto';
+    errorEl.style.display = 'block';
+    document.getElementById('pinInput').value = '';
+  }
+});
+
+document.getElementById('pinInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    document.getElementById('loginBtn').click();
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  sessionStorage.removeItem('admin_auth');
+  isAuthenticated = false;
+  showLogin(true);
+  document.getElementById('pinInput').value = '';
+});
+
+// Verificar si ya está autenticado
+if (sessionStorage.getItem('admin_auth') === 'true') {
+  isAuthenticated = true;
+  showLogin(false);
+  loadAllData();
+}
 
 // Tabs
 document.querySelectorAll('.tab').forEach(t => {
@@ -148,44 +272,13 @@ document.querySelectorAll('.tab').forEach(t => {
   });
 });
 
-// ESTADÍSTICAS
-async function loadStats(){
-  try {
-    const res = await fetch(API + '/stats/today');
-    const data = await res.json();
-    
-    document.getElementById('totalVendido').textContent = 'Total: ' + data.total_vendido.toFixed(0);
-    document.getElementById('totalComandas').textContent = data.total_comandas;
-    
-    const mesaBody = document.querySelector('#tablePorMesa tbody');
-    mesaBody.innerHTML = data.por_mesa.length ? data.por_mesa.map(m => `
-      <tr>
-        <td>${m.mesa || 'Sin mesa'}</td>
-        <td>${m.total.toFixed(0)}</td>
-        <td>${m.comandas}</td>
-      </tr>
-    `).join('') : '<tr><td colspan="3" style="text-align:center;opacity:.6">No hay datos</td></tr>';
-    
-    const mozoBody = document.querySelector('#tablePorMozo tbody');
-    mozoBody.innerHTML = data.por_mozo.length ? data.por_mozo.map(m => `
-      <tr>
-        <td>${m.mozo || 'Sin mozo'}</td>
-        <td>${m.total.toFixed(0)}</td>
-        <td>${m.comandas}</td>
-      </tr>
-    `).join('') : '<tr><td colspan="3" style="text-align:center;opacity:.6">No hay datos</td></tr>';
-  } catch(e) {
-    console.error('Error cargando estadísticas:', e);
-  }
+// Cargar datos
+async function loadAllData() {
+  await loadCategories();
+  await loadProducts();
+  await loadModifiers();
+  await loadStats();
 }
-
-document.getElementById('exportBtn').addEventListener('click', () => {
-  window.location.href = API + '/export/orders';
-});
-
-// PRODUCTOS
-let categories = [];
-let products = [];
 
 async function loadCategories(){
   try {
@@ -206,60 +299,153 @@ async function loadProducts(){
   try {
     const res = await fetch(API + '/products');
     products = await res.json();
-    renderProducts();
+    renderProductsByCategory();
   } catch(e) {
     console.error('Error cargando productos:', e);
   }
 }
 
-function renderProducts(){
-  const list = document.getElementById('productsList');
-  if (products.length === 0) {
-    list.innerHTML = '<p style="text-align:center;opacity:.6;padding:20px">No hay productos cargados</p>';
-    return;
+async function loadModifiers(){
+  try {
+    const res = await fetch(API + '/modifiers');
+    modifiers = await res.json();
+    renderModifiers();
+  } catch(e) {
+    console.error('Error cargando modificadores:', e);
+  }
+}
+
+function renderProductsByCategory(){
+  const search = document.getElementById('searchProductos')?.value.toLowerCase() || '';
+  let filtered = search ? products.filter(p => p.nombre.toLowerCase().includes(search)) : products;
+  
+  // Agrupar por categoría
+  const byCategory = {};
+  const sinCategoria = [];
+  
+  filtered.forEach(p => {
+    if (p.category_id) {
+      if (!byCategory[p.category_id]) {
+        byCategory[p.category_id] = [];
+      }
+      byCategory[p.category_id].push(p);
+    } else {
+      sinCategoria.push(p);
+    }
+  });
+  
+  const container = document.getElementById('productsByCategory');
+  let html = '';
+  
+  // Renderizar por categoría
+  categories.forEach(cat => {
+    const prods = byCategory[cat.id] || [];
+    if (prods.length === 0) return;
+    
+    html += `
+      <div class="category-section">
+        <div class="category-header">
+          <div class="category-title">${cat.nombre}</div>
+          <div style="opacity:.7;font-size:14px">${prods.length} producto(s)</div>
+        </div>
+        <div class="product-grid">
+          ${prods.map(p => `
+            <div class="product-card">
+              <div class="product-name">${p.nombre}</div>
+              <div class="product-price">${p.precio.toFixed(0)}</div>
+              <div class="product-actions">
+                <button class="btn btn-danger" onclick="deleteProduct(${p.id})">Eliminar</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  });
+  
+  // Sin categoría
+  if (sinCategoria.length > 0) {
+    html += `
+      <div class="category-section">
+        <div class="category-header">
+          <div class="category-title">Sin Categoría</div>
+          <div style="opacity:.7;font-size:14px">${sinCategoria.length} producto(s)</div>
+        </div>
+        <div class="product-grid">
+          ${sinCategoria.map(p => `
+            <div class="product-card">
+              <div class="product-name">${p.nombre}</div>
+              <div class="product-price">${p.precio.toFixed(0)}</div>
+              <div class="product-actions">
+                <button class="btn btn-danger" onclick="deleteProduct(${p.id})">Eliminar</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
   }
   
-  list.innerHTML = products.map(p => `
-    <div class="product-item">
-      <div class="product-info">
-        <div class="product-name">${p.nombre}</div>
-        <div class="product-price">${p.precio.toFixed(0)}</div>
-        <div class="product-cat">${p.categoria || 'Sin categoría'}</div>
-      </div>
-      <button class="btn btn-danger" data-id="${p.id}" onclick="deleteProduct(${p.id})">Eliminar</button>
-    </div>
-  `).join('');
+  container.innerHTML = html || '<p style="text-align:center;opacity:.6;padding:20px">No hay productos</p>';
 }
+
+document.getElementById('searchProductos')?.addEventListener('input', renderProductsByCategory);
 
 function renderCategories(){
   const list = document.getElementById('categoriesList');
   if (categories.length === 0) {
-    list.innerHTML = '<p style="text-align:center;opacity:.6;padding:20px">No hay categorías creadas</p>';
+    list.innerHTML = '<p style="text-align:center;opacity:.6;padding:20px">No hay categorías</p>';
     return;
   }
   
-  list.innerHTML = categories.map(c => `
-    <div class="product-item">
-      <div class="product-info">
-        <div class="product-name">${c.nombre}</div>
-        <div class="product-cat">Orden: ${c.orden}</div>
-      </div>
-      <button class="btn btn-danger" onclick="deleteCategory(${c.id})">Eliminar</button>
+  list.innerHTML = `
+    <div class="product-grid">
+      ${categories.map(c => `
+        <div class="product-card">
+          <div class="product-name">${c.nombre}</div>
+          <div style="opacity:.7;font-size:13px;margin-bottom:8px">Orden: ${c.orden}</div>
+          <button class="btn btn-danger" onclick="deleteCategory(${c.id})">Eliminar</button>
+        </div>
+      `).join('')}
     </div>
-  `).join('');
+  `;
 }
 
+function renderModifiers(){
+  const list = document.getElementById('modifiersList');
+  if (modifiers.length === 0) {
+    list.innerHTML = '<p style="text-align:center;opacity:.6;padding:20px">No hay modificadores</p>';
+    return;
+  }
+  
+  list.innerHTML = `
+    <div class="product-grid">
+      ${modifiers.map(m => `
+        <div class="product-card">
+          <div class="product-name">${m.nombre}</div>
+          <div class="product-price">${m.precio_extra > 0 ? ('+ + m.precio_extra.toFixed(0)) : 'Sin cargo'}</div>
+          <button class="btn btn-danger" onclick="deleteModifier(${m.id})">Eliminar</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// CRUD Productos
 document.getElementById('addProductBtn').addEventListener('click', async () => {
   const nombre = document.getElementById('prodNombre').value.trim();
   const precio = parseFloat(document.getElementById('prodPrecio').value);
   const category_id = document.getElementById('prodCategoria').value;
   
-  if (!nombre || !precio) {
-    return alert('❌ Completa nombre y precio');
+  if (!nombre) {
+    return showToast('El nombre es obligatorio', 'error');
+  }
+  if (!precio || precio < 0) {
+    return showToast('El precio debe ser mayor o igual a 0', 'error');
   }
   
   try {
-    await fetch(API + '/products', {
+    const res = await fetch(API + '/products', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -269,37 +455,17 @@ document.getElementById('addProductBtn').addEventListener('click', async () => {
       })
     });
     
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Error al crear producto');
+    }
+    
     document.getElementById('prodNombre').value = '';
     document.getElementById('prodPrecio').value = '';
-    alert('✅ Producto agregado');
+    showToast('Producto agregado');
     loadProducts();
   } catch(e) {
-    alert('❌ Error al agregar producto');
-  }
-});
-
-document.getElementById('addCategoryBtn').addEventListener('click', async () => {
-  const nombre = document.getElementById('catNombre').value.trim();
-  const orden = parseInt(document.getElementById('catOrden').value || '0');
-  
-  if (!nombre) {
-    return alert('❌ Escribe el nombre de la categoría');
-  }
-  
-  try {
-    await fetch(API + '/categories', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ nombre, orden })
-    });
-    
-    document.getElementById('catNombre').value = '';
-    document.getElementById('catOrden').value = '0';
-    alert('✅ Categoría agregada');
-    loadCategories();
-    loadProducts();
-  } catch(e) {
-    alert('❌ Error al agregar categoría');
+    showToast(e.message, 'error');
   }
 });
 
@@ -308,32 +474,109 @@ async function deleteProduct(id){
   
   try {
     await fetch(API + '/products/' + id, { method: 'DELETE' });
-    alert('✅ Producto eliminado');
+    showToast('Producto eliminado');
     loadProducts();
   } catch(e) {
-    alert('❌ Error al eliminar producto');
+    showToast('Error al eliminar producto', 'error');
   }
 }
+
+// CRUD Categorías
+document.getElementById('addCategoryBtn').addEventListener('click', async () => {
+  const nombre = document.getElementById('catNombre').value.trim();
+  const orden = parseInt(document.getElementById('catOrden').value || '0');
+  
+  if (!nombre) {
+    return showToast('El nombre es obligatorio', 'error');
+  }
+  
+  try {
+    const res = await fetch(API + '/categories', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ nombre, orden })
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Error al crear categoría');
+    }
+    
+    document.getElementById('catNombre').value = '';
+    document.getElementById('catOrden').value = '0';
+    showToast('Categoría agregada');
+    loadCategories();
+    loadProducts();
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+});
 
 async function deleteCategory(id){
   if (!confirm('¿Seguro? Los productos de esta categoría quedarán sin categoría.')) return;
   
   try {
     await fetch(API + '/categories/' + id, { method: 'DELETE' });
-    alert('✅ Categoría eliminada');
+    showToast('Categoría eliminada');
     loadCategories();
     loadProducts();
   } catch(e) {
-    alert('❌ Error al eliminar categoría');
+    showToast('Error al eliminar categoría', 'error');
   }
 }
 
-// Cargar datos iniciales
-loadStats();
-loadCategories();
-loadProducts();
+// CRUD Modificadores
+document.getElementById('addModifierBtn').addEventListener('click', async () => {
+  const nombre = document.getElementById('modNombre').value.trim();
+  const precio = parseFloat(document.getElementById('modPrecio').value || '0');
+  
+  if (!nombre) {
+    return showToast('El nombre es obligatorio', 'error');
+  }
+  
+  try {
+    await fetch(API + '/modifiers', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ nombre, precio_extra: precio })
+    });
+    
+    document.getElementById('modNombre').value = '';
+    document.getElementById('modPrecio').value = '0';
+    showToast('Modificador agregado');
+    loadModifiers();
+  } catch(e) {
+    showToast('Error al agregar modificador', 'error');
+  }
+});
 
-// Refrescar stats cada 30 seg
-setInterval(loadStats, 30000);
+async function deleteModifier(id){
+  if (!confirm('¿Seguro que querés eliminar este modificador?')) return;
+  
+  try {
+    await fetch(API + '/modifiers/' + id, { method: 'DELETE' });
+    showToast('Modificador eliminado');
+    loadModifiers();
+  } catch(e) {
+    showToast('Error al eliminar modificador', 'error');
+  }
+}
+
+// Estadísticas
+async function loadStats(){
+  try {
+    const res = await fetch(API + '/stats/today');
+    const data = await res.json();
+    document.getElementById('totalVendido').textContent = ' + (Number(data?.total_vendido || 0)).toFixed(0);
+    document.getElementById('totalComandas').textContent = data?.total_comandas || 0;
+  } catch(e) {
+    console.error('Error cargando estadísticas:', e);
+  }
+}
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  window.location.href = API + '/export/orders';
+  showToast('Descargando CSV...');
+});
 </script>
-</body></html>document.getElementById('totalVendido').textContent = 'Total: ' + data.total_vendido.toFixed(0);document.getElementById('totalVendido').textContent = 'Total: ' + data.total_vendido.toFixed(0);document.getElementById('totalVendido').textContent = 'Total: ' + data.total_vendido.toFixed(0);
+</body></html>

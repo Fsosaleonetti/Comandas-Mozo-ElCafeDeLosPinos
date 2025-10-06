@@ -1,107 +1,123 @@
 <!doctype html><html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cocina — Comandas</title>
+<title>Cocina – Comandas</title>
 <style>
-  :root{ color-scheme: light dark; }
-  body{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; padding:16px; background:#111; color:#eee; }
-  .layout{ display:grid; grid-template-columns: 1fr 300px; gap:20px; }
-  @media (max-width: 1024px){ .layout{ grid-template-columns: 1fr; } }
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:0;background:#111;color:#eee;}
+  .navbar{background:#1a1a1a;border-bottom:2px solid #333;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+  .navbar-brand{font-size:18px;font-weight:700;color:#10b981}
+  .navbar-links{display:flex;gap:12px}
+  .navbar-links a{color:#eee;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:14px;transition:background 0.2s}
+  .navbar-links a:hover{background:rgba(255,255,255,.1)}
+  .navbar-links a.active{background:#10b981;color:#000}
+  .content{padding:16px}
+  .layout{display:grid;grid-template-columns:1fr 300px;gap:20px;}
+  @media(max-width:1024px){.layout{grid-template-columns:1fr;}}
   
-  #lista{ display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items:start; }
-  .card{ background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.15); border-radius:14px; padding:12px; }
-  .card.anulada{ opacity:.65; filter: grayscale(.15); }
-  .badge{ background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); border-radius:10px; padding:2px 8px; margin-right:6px; font-size:13px; }
-  .head-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; margin-bottom:8px; }
-  .head-left{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .head-right{ display:flex; gap:8px; align-items:center; }
-  .item{ display:grid; grid-template-columns: 64px 1fr 80px 36px; grid-template-areas: "qty name price del" "note note note note"; gap:8px; align-items:center; padding:6px 0; border-bottom: 1px dashed rgba(255,255,255,.12); }
-  .item:last-child{ border-bottom:none; }
-  .item .qty{ grid-area: qty; width:64px; }
-  .item .name{ grid-area: name; min-width: 120px; }
-  .item .price{ grid-area: price; color:#10b981; font-weight:600; font-size:13px; }
-  .item .delItem{ grid-area: del; width:36px; height:32px; }
-  .item .note{ grid-area: note; width:100%; box-sizing:border-box; resize: none; min-height: 34px; }
-  .btn{ padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:transparent; cursor:pointer; }
-  .btn:hover{ filter: brightness(1.1); }
-  .muted{ font-size:12px; opacity:.7; }
-  .total-comanda{ font-weight:600; color:#10b981; font-size:16px; margin-top:8px; }
+  #lista{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));align-items:start;}
+  .card{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.15);border-radius:14px;padding:12px;transition:all 0.3s;}
+  .card.anulada{opacity:.65;filter:grayscale(.15);}
+  .card.pendiente{border-color:#10b981;}
+  .card.listo{border-color:#f59e0b;}
+  .card.cobrado{border-color:#3b82f6;}
   
-  .sidebar{ position:sticky; top:16px; }
-  .sidebar-section{ background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.15); border-radius:14px; padding:16px; margin-bottom:16px; }
-  .sidebar-section h3{ margin:0 0 12px 0; font-size:18px; }
+  .badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:2px 8px;margin-right:6px;font-size:13px;}
+  .badge-estado{font-weight:600;padding:4px 10px;}
+  .badge-estado.pendiente{background:#10b981;color:#000;}
+  .badge-estado.listo{background:#f59e0b;color:#000;}
+  .badge-estado.cobrado{background:#3b82f6;color:#fff;}
   
-  .calculator{ display:grid; gap:8px; }
-  .calc-display{ background:#222; border:1px solid #444; border-radius:8px; padding:12px; text-align:right; font-size:24px; font-weight:600; min-height:40px; }
-  .calc-buttons{ display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; }
-  .calc-btn{ padding:16px; border-radius:10px; border:1px solid #444; background:#1a1a1a; color:#eee; font-size:18px; cursor:pointer; font-weight:500; }
-  .calc-btn:hover{ background:#2a2a2a; }
-  .calc-btn:active{ transform: scale(0.95); }
-  .calc-btn.operator{ background:#3b82f6; border-color:#3b82f6; color:#fff; }
-  .calc-btn.equal{ background:#10b981; border-color:#10b981; color:#fff; grid-column: span 2; }
-  .calc-btn.clear{ background:#ef4444; border-color:#ef4444; color:#fff; }
-  .calc-history{ margin-top:12px; max-height:200px; overflow-y:auto; }
-  .calc-history-item{ padding:8px; background:#1a1a1a; border-radius:6px; margin:4px 0; font-size:13px; }
+  .btn{padding:7px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:transparent;cursor:pointer;font-size:14px;color:#eee}
+  .btn:hover{filter:brightness(1.1);}
+  .muted{font-size:12px;opacity:.7;}
+  .totales{margin-top:10px;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;}
+  .total-row{display:flex;justify-content:space-between;margin:4px 0;}
+  .total-row.final{font-size:18px;font-weight:700;color:#10b981;border-top:1px solid #444;padding-top:8px;margin-top:8px;}
   
-  .notas-list{ max-height:300px; overflow-y:auto; }
-  .nota-item{ background:#1a1a1a; border:1px solid #444; border-radius:8px; padding:10px; margin:8px 0; position:relative; }
-  .nota-item .nota-text{ margin-bottom:4px; word-wrap:break-word; }
-  .nota-item .nota-ts{ font-size:11px; opacity:.6; }
-  .nota-item .nota-del{ position:absolute; top:8px; right:8px; background:#ef4444; border:none; color:#fff; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:12px; }
-  .nota-input{ width:100%; background:#222; border:1px solid #444; border-radius:8px; padding:10px; color:#eee; margin-bottom:8px; font-family:inherit; resize:vertical; min-height:60px; }
+  .sidebar{position:sticky;top:80px;}
+  .sidebar-section{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:16px;margin-bottom:16px;}
+  .sidebar-section h3{margin:0 0 12px 0;font-size:18px;}
+  
+  .calculator{display:grid;gap:8px;}
+  .calc-display{background:#222;border:1px solid #444;border-radius:8px;padding:12px;text-align:right;font-size:24px;font-weight:600;min-height:40px;user-select:none;}
+  .calc-buttons{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .calc-btn{padding:16px;border-radius:10px;border:1px solid #444;background:#1a1a1a;color:#eee;font-size:18px;cursor:pointer;font-weight:500;user-select:none;touch-action:manipulation;}
+  .calc-btn:hover{background:#2a2a2a;}
+  .calc-btn:active{transform:scale(0.95);background:#333;}
+  .calc-btn.operator{background:#3b82f6;border-color:#3b82f6;color:#fff;}
+  .calc-btn.equal{background:#10b981;border-color:#10b981;color:#fff;grid-column:span 2;}
+  .calc-btn.clear{background:#ef4444;border-color:#ef4444;color:#fff;}
+  .calc-history{margin-top:12px;max-height:200px;overflow-y:auto;}
+  .calc-history-item{padding:8px;background:#1a1a1a;border-radius:6px;margin:4px 0;font-size:13px;}
+  
+  .toast{position:fixed;bottom:20px;right:20px;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:10000;animation:slideIn 0.3s ease;}
+  .toast.error{background:#ef4444;}
+  @keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}
+  
+  select,input,textarea{font-family:inherit;}
 </style>
 </head><body>
 
-<h2>Comandas en Cocina</h2>
-<div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
-  <button id="refrescar" class="btn">🔄 Refrescar</button>
-  <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="verAnuladas"> Ver anuladas</label>
-  <span id="status" class="muted"></span>
-</div>
-
-<div class="layout">
-  <div>
-    <div id="lista"></div>
+<nav class="navbar">
+  <div class="navbar-brand">Cocina</div>
+  <div class="navbar-links">
+    <a href="./mozo.html">Mozo</a>
+    <a href="./cocina.html" class="active">Cocina</a>
+    <a href="./admin.html">Admin</a>
   </div>
-  
-  <div class="sidebar">
-    <div class="sidebar-section">
-      <h3>🧮 Calculadora</h3>
-      <div class="calculator">
-        <div class="calc-display" id="calcDisplay">0</div>
-        <div class="calc-buttons">
-          <button class="calc-btn" data-num="7">7</button>
-          <button class="calc-btn" data-num="8">8</button>
-          <button class="calc-btn" data-num="9">9</button>
-          <button class="calc-btn operator" data-op="/">÷</button>
-          
-          <button class="calc-btn" data-num="4">4</button>
-          <button class="calc-btn" data-num="5">5</button>
-          <button class="calc-btn" data-num="6">6</button>
-          <button class="calc-btn operator" data-op="*">×</button>
-          
-          <button class="calc-btn" data-num="1">1</button>
-          <button class="calc-btn" data-num="2">2</button>
-          <button class="calc-btn" data-num="3">3</button>
-          <button class="calc-btn operator" data-op="-">−</button>
-          
-          <button class="calc-btn" data-num="0">0</button>
-          <button class="calc-btn" data-num=".">.</button>
-          <button class="calc-btn clear" data-action="clear">C</button>
-          <button class="calc-btn operator" data-op="+">+</button>
-          
-          <button class="calc-btn equal" data-action="equals">=</button>
-          <button class="calc-btn" data-action="back">⌫</button>
-          <button class="calc-btn" data-action="clearHistory">🗑️</button>
-        </div>
-        <div class="calc-history" id="calcHistory"></div>
-      </div>
+</nav>
+
+<div class="content">
+  <h2>Comandas en Cocina</h2>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <button id="refrescar" class="btn">🔄 Refrescar</button>
+    <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="verAnuladas"> Ver anuladas</label>
+    <select id="filtroEstado" style="background:#222;border:1px solid #444;border-radius:8px;padding:6px 10px;color:#eee">
+      <option value="">Todos los estados</option>
+      <option value="pendiente">Pendientes</option>
+      <option value="listo">Listos</option>
+      <option value="cobrado">Cobrados</option>
+    </select>
+    <span id="status" class="muted"></span>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div id="lista"></div>
     </div>
     
-    <div class="sidebar-section">
-      <h3>📝 Notas Generales</h3>
-      <textarea class="nota-input" id="nuevaNota" placeholder="Escribe una nota general (ej: Mesa 3 pidió cuenta, falta hielo...)"></textarea>
-      <button class="btn" id="guardarNota" style="width:100%;background:#10b981;border-color:#10b981;color:#fff">Guardar Nota</button>
-      <div class="notas-list" id="notasList"></div>
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h3>🧮 Calculadora</h3>
+        <div class="calculator">
+          <div class="calc-display" id="calcDisplay">0</div>
+          <div class="calc-buttons" id="calcButtons">
+            <button class="calc-btn" data-num="7">7</button>
+            <button class="calc-btn" data-num="8">8</button>
+            <button class="calc-btn" data-num="9">9</button>
+            <button class="calc-btn operator" data-op="/">÷</button>
+            
+            <button class="calc-btn" data-num="4">4</button>
+            <button class="calc-btn" data-num="5">5</button>
+            <button class="calc-btn" data-num="6">6</button>
+            <button class="calc-btn operator" data-op="*">×</button>
+            
+            <button class="calc-btn" data-num="1">1</button>
+            <button class="calc-btn" data-num="2">2</button>
+            <button class="calc-btn" data-num="3">3</button>
+            <button class="calc-btn operator" data-op="-">−</button>
+            
+            <button class="calc-btn" data-num="0">0</button>
+            <button class="calc-btn" data-num=".">.</button>
+            <button class="calc-btn clear" data-action="clear">C</button>
+            <button class="calc-btn operator" data-op="+">+</button>
+            
+            <button class="calc-btn equal" data-action="equals">=</button>
+            <button class="calc-btn" data-action="back">⌫</button>
+            <button class="calc-btn" data-action="clearHistory">🗑️</button>
+          </div>
+          <div class="calc-history" id="calcHistory"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -112,13 +128,23 @@ const listaEl = document.getElementById("lista");
 const refrescar = document.getElementById("refrescar");
 const status = document.getElementById("status");
 const verAnuladas = document.getElementById("verAnuladas");
+const filtroEstado = document.getElementById("filtroEstado");
 const WS_URL = (location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.host + '/ws/kitchen';
 
-// Calculadora
+// Toast
+function showToast(msg, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// CALCULADORA MEJORADA
 let calcCurrent = '0';
 let calcPrevious = '';
 let calcOperation = null;
-let calcHistory = [];
+let calcHistory = JSON.parse(localStorage.getItem('calc_history') || '[]');
 
 const calcDisplay = document.getElementById('calcDisplay');
 const calcHistoryEl = document.getElementById('calcHistory');
@@ -129,6 +155,8 @@ function updateCalcDisplay(){
 
 function addToHistory(entry){
   calcHistory.push(entry);
+  if (calcHistory.length > 50) calcHistory.shift();
+  localStorage.setItem('calc_history', JSON.stringify(calcHistory));
   renderCalcHistory();
 }
 
@@ -138,8 +166,16 @@ function renderCalcHistory(){
   ).join('');
 }
 
-document.querySelectorAll('.calc-btn[data-num]').forEach(btn => {
-  btn.addEventListener('click', () => {
+// Eventos de botones de calculadora
+document.getElementById('calcButtons').addEventListener('click', (e) => {
+  const btn = e.target.closest('.calc-btn');
+  if (!btn) return;
+  
+  e.preventDefault();
+  e.stopPropagation();
+  
+  // Números
+  if (btn.dataset.num !== undefined) {
     const num = btn.dataset.num;
     if (calcCurrent === '0' && num !== '.') {
       calcCurrent = num;
@@ -149,21 +185,42 @@ document.querySelectorAll('.calc-btn[data-num]').forEach(btn => {
       calcCurrent += num;
     }
     updateCalcDisplay();
-  });
-});
-
-document.querySelectorAll('.calc-btn[data-op]').forEach(btn => {
-  btn.addEventListener('click', () => {
+    return;
+  }
+  
+  // Operadores
+  if (btn.dataset.op !== undefined) {
     if (calcOperation && calcPrevious) {
       calculate();
     }
     calcOperation = btn.dataset.op;
     calcPrevious = calcCurrent;
     calcCurrent = '0';
-  });
+    return;
+  }
+  
+  // Acciones
+  const action = btn.dataset.action;
+  if (action === 'equals') {
+    calculate();
+  } else if (action === 'clear') {
+    calcCurrent = '0';
+    calcPrevious = '';
+    calcOperation = null;
+    updateCalcDisplay();
+  } else if (action === 'back') {
+    if (calcCurrent.length > 1) {
+      calcCurrent = calcCurrent.slice(0, -1);
+    } else {
+      calcCurrent = '0';
+    }
+    updateCalcDisplay();
+  } else if (action === 'clearHistory') {
+    calcHistory = [];
+    localStorage.removeItem('calc_history');
+    renderCalcHistory();
+  }
 });
-
-document.querySelector('.calc-btn[data-action="equals"]').addEventListener('click', calculate);
 
 function calculate(){
   if (!calcOperation || !calcPrevious) return;
@@ -191,181 +248,161 @@ function calculate(){
   updateCalcDisplay();
 }
 
-document.querySelector('.calc-btn[data-action="clear"]').addEventListener('click', () => {
-  calcCurrent = '0';
-  calcPrevious = '';
-  calcOperation = null;
-  updateCalcDisplay();
-});
-
-document.querySelector('.calc-btn[data-action="back"]').addEventListener('click', () => {
-  if (calcCurrent.length > 1) {
-    calcCurrent = calcCurrent.slice(0, -1);
-  } else {
-    calcCurrent = '0';
+// SOPORTE TECLADO
+document.addEventListener('keydown', (e) => {
+  // Solo si no está en un input
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+    return;
   }
-  updateCalcDisplay();
-});
-
-document.querySelector('.calc-btn[data-action="clearHistory"]').addEventListener('click', () => {
-  calcHistory = [];
-  renderCalcHistory();
-});
-
-// Notas generales
-async function cargarNotas(){
-  try {
-    const res = await fetch(API + '/notas');
-    const data = await res.json();
-    const notasList = document.getElementById('notasList');
-    if (data.length === 0) {
-      notasList.innerHTML = '<p class="muted" style="text-align:center;padding:12px">No hay notas</p>';
-      return;
-    }
-    notasList.innerHTML = data.map(n => `
-      <div class="nota-item">
-        <button class="nota-del" data-id="${n.id}">✕</button>
-        <div class="nota-text">${n.contenido}</div>
-        <div class="nota-ts">${new Date(n.ts).toLocaleString()}</div>
-      </div>
-    `).join('');
-    
-    notasList.querySelectorAll('.nota-del').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        await fetch(API + '/notas/' + id, {method: 'DELETE'});
-        cargarNotas();
-      });
-    });
-  } catch(e) {
-    console.error('Error cargando notas:', e);
-  }
-}
-
-document.getElementById('guardarNota').addEventListener('click', async () => {
-  const contenido = document.getElementById('nuevaNota').value.trim();
-  if (!contenido) return alert('❌ Escribe algo primero');
   
-  try {
-    await fetch(API + '/notas', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({contenido})
-    });
-    document.getElementById('nuevaNota').value = '';
-    cargarNotas();
-  } catch(e) {
-    alert('❌ Error al guardar nota');
+  const key = e.key;
+  
+  // Números
+  if (key >= '0' && key <= '9') {
+    if (calcCurrent === '0') {
+      calcCurrent = key;
+    } else {
+      calcCurrent += key;
+    }
+    updateCalcDisplay();
+    e.preventDefault();
+  }
+  
+  // Punto
+  if ((key === '.' || key === ',') && !calcCurrent.includes('.')) {
+    calcCurrent += '.';
+    updateCalcDisplay();
+    e.preventDefault();
+  }
+  
+  // Operadores
+  if (['+', '-', '*', '/'].includes(key)) {
+    if (calcOperation && calcPrevious) {
+      calculate();
+    }
+    calcOperation = key;
+    calcPrevious = calcCurrent;
+    calcCurrent = '0';
+    e.preventDefault();
+  }
+  
+  // Enter o =
+  if (key === 'Enter' || key === '=') {
+    calculate();
+    e.preventDefault();
+  }
+  
+  // Escape o C
+  if (key === 'Escape' || key === 'c' || key === 'C') {
+    calcCurrent = '0';
+    calcPrevious = '';
+    calcOperation = null;
+    updateCalcDisplay();
+    e.preventDefault();
+  }
+  
+  // Backspace
+  if (key === 'Backspace') {
+    if (calcCurrent.length > 1) {
+      calcCurrent = calcCurrent.slice(0, -1);
+    } else {
+      calcCurrent = '0';
+    }
+    updateCalcDisplay();
+    e.preventDefault();
   }
 });
 
 // Comandas
 async function cargar(){
-  const query = verAnuladas && verAnuladas.checked ? "?anuladas=1" : "?anuladas=0";
-  const res = await fetch(API + "/orders" + query);
+  const anuladas = verAnuladas && verAnuladas.checked ? 1 : 0;
+  const estado = filtroEstado.value;
+  let url = `${API}/orders?anuladas=${anuladas}`;
+  if (estado) url += `&estado=${estado}`;
+  
+  const res = await fetch(url);
   const data = await res.json();
   render(data);
 }
 
 function render(lista){
-  listaEl.innerHTML = lista.map(o=>`
-    <div class="card ${o.anulada ? 'anulada' : ''}" data-oid="${o.id}">
-      <div class="head-row">
-        <div class="head-left">
+  listaEl.innerHTML = lista.map(o=>{
+    const estadoClass = o.anulada ? '' : o.estado;
+    return `
+    <div class="card ${o.anulada ? 'anulada' : estadoClass}" data-oid="${o.id}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
           <span class="badge">${o.mesa||('Mesa '+o.table_id)}</span>
-          <input type="text" class="mozoNombre" value="${o.mozo||o.mozo_nombre||''}" style="width:120px;background:#222;border:1px solid #444;border-radius:6px;padding:4px 8px;color:#eee">
+          <span class="badge-estado ${o.estado}">${o.estado.toUpperCase()}</span>
         </div>
-        <div class="head-right">
-          <select class="mesaSel" style="background:#222;border:1px solid #444;border-radius:6px;padding:4px 8px;color:#eee">
-            ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}" ${n==o.table_id?'selected':''}>${n}</option>`).join('')}
-          </select>
-        </div>
+        <span class="muted">${new Date(o.ts).toLocaleTimeString()}</span>
       </div>
-      <div class="items" style="margin-top:6px">
+      <div style="margin:8px 0">
         ${o.items.map(it=>`
-          <div class="item">
-            <input type="number" min="0" value="${it.cantidad}" data-itemid="${it.id}" class="qty" style="background:#222;border:1px solid #444;border-radius:6px;padding:6px;color:#eee">
-            <span class="name">${it.nombre}</span>
-            <span class="price">${it.precio ? '$'+it.precio.toFixed(0) : ''}</span>
-            <button class="delItem btn" data-itemid="${it.id}">✕</button>
-            <textarea data-itemid="${it.id}" class="note" placeholder="Notas (ej: sin azúcar)" style="background:#222;border:1px solid #444;border-radius:6px;padding:6px;color:#eee">${it.notas||''}</textarea>
+          <div style="padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.1)">
+            <strong>${it.cantidad}x ${it.nombre}</strong> 
+            ${it.precio ? '<span style="color:#10b981">$'+it.precio.toFixed(0)+'</span>' : ''}
+            ${it.modifiers && it.modifiers.length > 0 ? `
+              <div style="font-size:12px;opacity:.7;padding-left:8px">+ ${it.modifiers.map(m => m.modifier_nombre).join(', ')}</div>
+            ` : ''}
+            ${it.notas ? '<div style="font-size:12px;opacity:.8;padding-left:8px;font-style:italic">'+it.notas+'</div>' : ''}
           </div>
         `).join("")}
       </div>
-      <div class="total-comanda">Total: $${(o.total || 0).toFixed(0)}</div>
-      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        ${o.anulada
-          ? `<button class="restore btn" data-oid="${o.id}" style="background:#10b981;border-color:#10b981;color:#fff">Restaurar</button>`
-          : `<button class="save btn" data-oid="${o.id}" style="background:#3b82f6;border-color:#3b82f6;color:#fff">Guardar</button>
-             <button class="cancel btn" data-oid="${o.id}" style="background:#ef4444;border-color:#ef4444;color:#fff">Anular</button>`
-        }
-        <span class="muted">${new Date(o.ts).toLocaleTimeString()} · ${o.items.length} ítem(s)</span>
+      <div class="totales">
+        <div class="total-row"><span>Subtotal:</span><span>${(o.subtotal || 0).toFixed(0)}</span></div>
+        ${o.descuento_total > 0 ? `<div class="total-row" style="color:#f59e0b"><span>Descuentos:</span><span>-${o.descuento_total.toFixed(0)}</span></div>` : ''}
+        <div class="total-row final"><span>TOTAL:</span><span>${(o.total || 0).toFixed(0)}</span></div>
+        ${o.pagado ? '<div style="color:#10b981;text-align:center;margin-top:8px;font-weight:600">✅ PAGADO</div>' : ''}
       </div>
-    </div>`).join("");
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        ${o.anulada ? '' : `
+          <select class="cambiarEstado" data-oid="${o.id}" style="background:#222;border:1px solid #444;border-radius:8px;padding:6px;color:#eee">
+            <option value="pendiente" ${o.estado==='pendiente'?'selected':''}>Pendiente</option>
+            <option value="listo" ${o.estado==='listo'?'selected':''}>Listo</option>
+            <option value="cobrado" ${o.estado==='cobrado'?'selected':''}>Cobrado</option>
+          </select>
+        `}
+        <span class="muted">${o.mozo || ''}</span>
+      </div>
+    </div>`
+  }).join("");
   
-  listaEl.querySelectorAll('textarea.note').forEach(ta=>{
-    const grow = ()=>{ ta.style.height='auto'; ta.style.height=(ta.scrollHeight)+'px'; };
-    ta.addEventListener('input', grow); grow();
+  // Cambiar estado
+  listaEl.querySelectorAll('.cambiarEstado').forEach(sel => {
+    sel.addEventListener('change', async (e) => {
+      const oid = e.target.dataset.oid;
+      const estado = e.target.value;
+      try {
+        await fetch(`${API}/orders/${oid}/estado`, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({estado})
+        });
+        showToast(`Estado cambiado a ${estado}`);
+        cargar();
+      } catch(err) {
+        showToast('Error al cambiar estado', 'error');
+      }
+    });
   });
 }
 
 refrescar && (refrescar.onclick=cargar);
 verAnuladas && (verAnuladas.onchange=cargar);
+filtroEstado && (filtroEstado.onchange=cargar);
 cargar();
-cargarNotas();
+renderCalcHistory();
+updateCalcDisplay();
 
 const ws = new WebSocket(WS_URL);
 ws.onopen=()=>status.textContent="(escuchando pedidos...)";
 ws.onclose=()=>status.textContent="(desconectado)";
 ws.onmessage=(e)=>{ 
   const msg=JSON.parse(e.data); 
-  if(msg.type==="new_order"||msg.type==="order_restored"||msg.type==="order_updated"){ 
+  if(['new_order','order_restored','order_updated','order_cancelled','discount_applied','payment_added'].includes(msg.type)){ 
     cargar(); 
   }
-  if(msg.type==="new_nota"||msg.type==="nota_deleted"){
-    cargarNotas();
-  }
 };
-
-function cardFromChild(el){ while(el && !el.classList.contains('card')) el = el.parentElement; return el; }
-
-listaEl.addEventListener('click', async (e)=>{
-  if(e.target.classList.contains('save')){
-    const card = cardFromChild(e.target);
-    const orderId = e.target.dataset.oid;
-    const pin = prompt("PIN admin para guardar cambios:"); if(!pin) return;
-    const qtys = [...card.querySelectorAll('.qty')];
-    const notes = [...card.querySelectorAll('.note')];
-    const mesaSel = card.querySelector('.mesaSel');
-    const mozoNombre = card.querySelector('.mozoNombre');
-    const byId = {};
-    qtys.forEach(i=>{ byId[i.dataset.itemid] = byId[i.dataset.itemid] || {}; byId[i.dataset.itemid].cantidad = parseInt(i.value||'0',10); });
-    notes.forEach(i=>{ byId[i.dataset.itemid] = byId[i.dataset.itemid] || {}; byId[i.dataset.itemid].notas = i.value; });
-    const items = Object.entries(byId).map(([id,vals])=>({id:parseInt(id,10), ...vals}));
-    const payload = { admin_pin: pin, items, table_id: parseInt(mesaSel.value,10), mozo_nombre: mozoNombre.value };
-    const res = await fetch(API+"/orders/"+orderId, { method:"PUT", headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-    const js = await res.json();
-    if(js.ok){ alert("✅ Guardado"); cargar(); } else { alert("❌ Error: "+(js.detail||'No se pudo guardar')); }
-  }
-  if(e.target.classList.contains('cancel')){
-    if(!confirm("¿Seguro que querés anular esta comanda?")) return;
-    const oid = e.target.dataset.oid;
-    const res = await fetch(API+"/orders/"+oid+"/cancel", { method:"POST"});
-    const js = await res.json();
-    if(js.ok){ alert("✅ Comanda anulada"); cargar(); } else { alert("❌ Error: "+(js.detail||'No se pudo anular')); }
-  }
-  if(e.target.classList.contains('restore')){
-    if(!confirm("¿Seguro que querés restaurar esta comanda?")) return;
-    const oid = e.target.dataset.oid;
-    const res = await fetch(API+"/orders/"+oid+"/uncancel", { method:"POST"});
-    const js = await res.json();
-    if(js.ok){ alert("✅ Comanda restaurada"); cargar(); } else { alert("❌ Error")}
-  }
-  if(e.target.classList.contains('delItem')){
-    const iid = e.target.dataset.itemid;
-    const input = cardFromChild(e.target).querySelector('.qty[data-itemid="'+iid+'"]');
-    if(input){ input.value = 0; e.target.parentElement.style.opacity = 0.6; }
-  }
-});
 </script>
 </body></html>

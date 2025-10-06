@@ -1,11 +1,16 @@
 <!doctype html><html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mozo — Nuevo Pedido</title>
-<link rel="manifest" href="manifest.mozo.webmanifest">
+<title>Mozo – Nuevo Pedido</title>
 <meta name="theme-color" content="#1a1a1a">
-<link rel="icon" href="icons/mozo-192.png">
 <style>
-  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:16px;background:#111;color:#eee;}
+  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:0;background:#111;color:#eee;}
+  .navbar{background:#1a1a1a;border-bottom:2px solid #333;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+  .navbar-brand{font-size:18px;font-weight:700;color:#10b981}
+  .navbar-links{display:flex;gap:12px}
+  .navbar-links a{color:#eee;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:14px;transition:background 0.2s}
+  .navbar-links a:hover{background:rgba(255,255,255,.1)}
+  .navbar-links a.active{background:#10b981;color:#000}
+  .content{padding:16px}
   .row{margin:12px 0}
   .card{border:1px solid #444;padding:12px;border-radius:10px;margin:8px 0;background:rgba(255,255,255,.04);}
   label{margin-right:12px;font-weight:500;}
@@ -14,7 +19,8 @@
   button:active{transform:scale(0.98);}
   textarea{background:#222;color:#eee;border-radius:8px;border:1px solid #444;padding:8px;width:100%;box-sizing:border-box;font-family:inherit;}
   select,input[type=text],input[type=search]{background:#222;color:#eee;border-radius:8px;border:1px solid #444;padding:8px;font-size:15px;}
-  #offlineBar{background:#d97706;color:#fff;padding:10px;border-radius:8px;margin:8px 0;font-weight:500;}
+  #statusBar{background:#10b981;color:#fff;padding:10px;text-align:center;font-weight:500;}
+  #statusBar.offline{background:#ef4444;}
   .tabs{display:flex;gap:8px;margin:16px 0;border-bottom:2px solid #333;}
   .tab{padding:10px 16px;cursor:pointer;border-radius:8px 8px 0 0;background:transparent;border:none;color:#999;font-size:15px;}
   .tab.active{background:rgba(255,255,255,.08);color:#eee;font-weight:500;}
@@ -31,115 +37,156 @@
   .product-price{font-size:13px;color:#10b981;font-weight:600;}
   .search-box{width:100%;padding:10px;font-size:15px;margin-bottom:12px;}
   .cart{margin:16px 0;}
-  .cart-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid #444;border-radius:8px;margin:6px 0;background:#1a1a1a;}
-  .cart-item-name{flex:1;font-weight:500;}
+  .cart-item{border:1px solid #444;border-radius:8px;margin:8px 0;background:#1a1a1a;padding:10px;}
+  .cart-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .cart-item-name{font-weight:600;font-size:16px;}
   .cart-item-qty{display:flex;gap:8px;align-items:center;}
   .cart-item-qty button{padding:6px 12px;font-size:14px;min-width:36px;}
-  .cart-item-notes{width:100%;margin-top:6px;font-size:13px;padding:6px;}
+  .cart-item-notes{width:100%;margin-top:6px;font-size:13px;padding:6px;background:#222;border:1px solid #444;border-radius:6px;color:#eee;}
+  .modifiers-section{margin-top:8px;padding-top:8px;border-top:1px dashed #444;}
+  .modifiers-label{font-size:13px;opacity:.7;margin-bottom:6px;}
+  .modifier-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .modifier-chip{padding:4px 10px;border-radius:12px;border:1px solid #555;background:#222;font-size:12px;cursor:pointer;transition:all 0.2s;}
+  .modifier-chip:hover{border-color:#10b981;}
+  .modifier-chip.active{background:#10b981;color:#fff;border-color:#10b981;}
   .total{font-size:18px;font-weight:600;color:#10b981;text-align:right;margin:12px 0;}
   .btn-primary{background:#3b82f6;border-color:#3b82f6;color:#fff;font-weight:600;font-size:16px;}
   .btn-primary:hover{background:#2563eb;}
+  .toast{position:fixed;bottom:20px;right:20px;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:9999;animation:slideIn 0.3s ease;}
+  .toast.error{background:#ef4444;}
+  @keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}
 </style>
 </head><body>
-<div id="offlineBar" style="display:none">
-  🔴 Modo sin conexión: los pedidos se guardarán y enviarán cuando vuelva Internet.
-  <span id="queueCount" style="float:right">Pendientes: 0</span>
-</div>
 
-<h2>Nuevo pedido</h2>
+<nav class="navbar">
+  <div class="navbar-brand">Mozo</div>
+  <div class="navbar-links">
+    <a href="./mozo.html" class="active">Mozo</a>
+    <a href="./cocina.html">Cocina</a>
+    <a href="./admin.html">Admin</a>
+  </div>
+</nav>
 
-<div class="row">
-  <label>Mesa:
-    <select id="mesa">
-      <option value="1">Mesa 1</option>
-      <option value="2">Mesa 2</option>
-      <option value="3">Mesa 3</option>
-      <option value="4">Mesa 4</option>
-      <option value="5">Mesa 5</option>
-      <option value="6">Mesa 6</option>
-      <option value="7">Mesa 7</option>
-      <option value="8">Mesa 8</option>
-      <option value="9">Mesa 9</option>
-      <option value="10">Mesa 10</option>
-    </select>
-  </label>
-  <label>Mozo:
-    <input id="mozo" type="text" placeholder="Tu nombre" value="">
-  </label>
-</div>
+<div id="statusBar">En línea</div>
 
-<div class="tabs">
-  <button class="tab active" data-tab="menu">📋 Menú</button>
-  <button class="tab" data-tab="libre">✍️ Pedido Libre</button>
-</div>
+<div class="content">
+  <h2>Nuevo pedido</h2>
 
-<div id="menu" class="tab-content active">
-  <input type="search" id="searchProduct" class="search-box" placeholder="🔍 Buscar producto...">
-  <div class="categories" id="categories"></div>
-  <div class="products" id="products"></div>
-</div>
+  <div class="row">
+    <label>Mesa:
+      <select id="mesa">
+        <option value="1">Mesa 1</option>
+        <option value="2">Mesa 2</option>
+        <option value="3">Mesa 3</option>
+        <option value="4">Mesa 4</option>
+        <option value="5">Mesa 5</option>
+        <option value="6">Mesa 6</option>
+        <option value="7">Mesa 7</option>
+        <option value="8">Mesa 8</option>
+        <option value="9">Mesa 9</option>
+        <option value="10">Mesa 10</option>
+      </select>
+    </label>
+    <label>Mozo:
+      <input id="mozo" type="text" placeholder="Tu nombre" value="">
+    </label>
+  </div>
 
-<div id="libre" class="tab-content">
-  <label>Pedido (texto libre):</label>
-  <textarea id="pedidoLibre" rows="4" placeholder="Ej: 2 cafés, 1 medialuna, 1 tostado sin sal..."></textarea>
-</div>
+  <div class="tabs">
+    <button class="tab active" data-tab="menu">Menú</button>
+    <button class="tab" data-tab="libre">Pedido Libre</button>
+  </div>
 
-<div class="cart" id="cart" style="display:none">
-  <h3>🛒 Carrito</h3>
-  <div id="cartItems"></div>
-  <div class="total" id="cartTotal">Total: $0</div>
-</div>
+  <div id="menu" class="tab-content active">
+    <input type="search" id="searchProduct" class="search-box" placeholder="Buscar producto...">
+    <div class="categories" id="categories"></div>
+    <div class="products" id="products"></div>
+  </div>
 
-<div class="row">
-  <button class="btn btn-primary" id="enviarBtn" style="width:100%">Enviar pedido</button>
+  <div id="libre" class="tab-content">
+    <label>Pedido (texto libre):</label>
+    <textarea id="pedidoLibre" rows="4" placeholder="Ej: 2 cafés, 1 medialuna, 1 tostado sin sal..."></textarea>
+  </div>
+
+  <div class="cart" id="cart" style="display:none">
+    <h3>Carrito</h3>
+    <div id="cartItems"></div>
+    <div class="total" id="cartTotal">Total: $0</div>
+  </div>
+
+  <div class="row">
+    <button class="btn btn-primary" id="enviarBtn" style="width:100%">Enviar pedido</button>
+  </div>
 </div>
 
 <script>
 const API = location.origin;
 let categories = [];
 let products = [];
+let modifiers = [];
 let cart = [];
 let selectedCategory = null;
+let isOnline = navigator.onLine;
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
-    try { await navigator.serviceWorker.register('/static/sw-mozo.js'); } catch(e){ console.log('SW error', e); }
-  });
+// Persistencia del carrito
+const CART_KEY = 'mozo_cart_v1';
+const MOZO_KEY = 'mozo_nombre';
+
+function saveCart() {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
 }
 
-const QUEUE_KEY = 'mozo_order_queue_v1';
-function getQueue(){ try { return JSON.parse(localStorage.getItem(QUEUE_KEY)||'[]'); } catch(e){ return []; } }
-function setQueue(q){ localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); updateQueueUI(); }
-function enqueue(order){ const q = getQueue(); q.push({ts: Date.now(), order}); setQueue(q); }
-
-async function flushQueue(){
-  const q = getQueue();
-  if(!q.length) return alert("No hay pendientes.");
-  let ok = 0, fail = 0;
-  for(let i=0;i<q.length;i++){
-    const payload = q[i].order;
-    try{
-      const res = await fetch(API+"/orders",{method:"POST", headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-      const js = await res.json();
-      if(js && js.ok){ ok++; } else { fail++; }
-    }catch(e){ fail++; }
+function loadCart() {
+  try {
+    const saved = localStorage.getItem(CART_KEY);
+    if (saved) {
+      cart = JSON.parse(saved);
+      renderCart();
+    }
+  } catch(e) {
+    console.error('Error cargando carrito:', e);
   }
-  if (fail===0) setQueue([]);
-  updateQueueUI();
-  alert(ok ? `✅ Se enviaron ${ok} pedidos.` : "❌ No se pudo enviar la cola.");
 }
 
-function updateQueueUI(){
-  const count = getQueue().length;
-  const bar = document.getElementById('offlineBar');
-  const qc = document.getElementById('queueCount');
-  if(qc) qc.textContent = 'Pendientes: ' + count;
-  if(!navigator.onLine || count>0){ if(bar) bar.style.display = 'block'; } else { if(bar) bar.style.display = 'none'; }
+function saveMozoName() {
+  const nombre = document.getElementById('mozo').value;
+  if (nombre) {
+    localStorage.setItem(MOZO_KEY, nombre);
+  }
 }
 
-window.addEventListener('online', flushQueue);
-window.addEventListener('offline', updateQueueUI);
-updateQueueUI();
+function loadMozoName() {
+  const saved = localStorage.getItem(MOZO_KEY);
+  if (saved) {
+    document.getElementById('mozo').value = saved;
+  }
+}
+
+// Monitorear conexión
+function updateStatus() {
+  isOnline = navigator.onLine;
+  const bar = document.getElementById('statusBar');
+  if (isOnline) {
+    bar.textContent = 'En línea';
+    bar.className = '';
+  } else {
+    bar.textContent = 'Sin conexión - Los pedidos se guardarán localmente';
+    bar.className = 'offline';
+  }
+}
+
+window.addEventListener('online', updateStatus);
+window.addEventListener('offline', updateStatus);
+updateStatus();
+
+// Toast notifications
+function showToast(msg, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
 
 // Tabs
 document.querySelectorAll('.tab').forEach(t => {
@@ -151,19 +198,22 @@ document.querySelectorAll('.tab').forEach(t => {
   });
 });
 
-// Cargar categorías y productos
+// Cargar datos
 async function loadData(){
   try {
-    const [catRes, prodRes] = await Promise.all([
+    const [catRes, prodRes, modRes] = await Promise.all([
       fetch(API + '/categories'),
-      fetch(API + '/products')
+      fetch(API + '/products'),
+      fetch(API + '/modifiers')
     ]);
     categories = await catRes.json();
     products = await prodRes.json();
+    modifiers = await modRes.json();
     renderCategories();
     renderProducts();
   } catch(e) {
     console.error('Error cargando datos:', e);
+    showToast("Error cargando menú", "error");
   }
 }
 
@@ -203,7 +253,7 @@ function renderProducts(){
   el.innerHTML = filtered.map(p => `
     <div class="product" data-id="${p.id}">
       <div class="product-name">${p.nombre}</div>
-      <div class="product-price">${p.precio.toFixed(0)}</div>
+      <div class="product-price">$${p.precio.toFixed(0)}</div>
     </div>
   `).join('');
   
@@ -221,7 +271,7 @@ function addToCart(productId){
   const product = products.find(p => p.id === productId);
   if (!product) return;
   
-  const existing = cart.find(c => c.id === productId);
+  const existing = cart.find(c => c.id === productId && c.modifiers.length === 0);
   if (existing) {
     existing.cantidad++;
   } else {
@@ -230,10 +280,13 @@ function addToCart(productId){
       nombre: product.nombre,
       precio: product.precio,
       cantidad: 1,
-      notas: ''
+      notas: '',
+      modifiers: []
     });
   }
+  saveCart();
   renderCart();
+  showToast(`${product.nombre} agregado`, "success");
 }
 
 function renderCart(){
@@ -250,27 +303,47 @@ function renderCart(){
   
   let total = 0;
   itemsEl.innerHTML = cart.map((item, idx) => {
-    total += item.precio * item.cantidad;
+    const modTotal = item.modifiers.reduce((sum, m) => sum + (m.precio_extra || 0), 0);
+    const itemTotal = (item.precio + modTotal) * item.cantidad;
+    total += itemTotal;
+    
     return `
       <div class="cart-item">
-        <div style="flex:1">
+        <div class="cart-item-header">
           <div class="cart-item-name">${item.nombre}</div>
-          <div class="product-price">${item.precio.toFixed(0)} c/u</div>
-          <input type="text" class="cart-item-notes" placeholder="Notas (ej: sin azúcar)" 
-                 value="${item.notas}" data-idx="${idx}">
+          <div class="cart-item-qty">
+            <button data-idx="${idx}" data-action="minus">−</button>
+            <span style="min-width:30px;text-align:center;font-weight:600">${item.cantidad}</span>
+            <button data-idx="${idx}" data-action="plus">+</button>
+            <button data-idx="${idx}" data-action="remove" style="background:#ef4444;border-color:#ef4444">🗑️</button>
+          </div>
         </div>
-        <div class="cart-item-qty">
-          <button data-idx="${idx}" data-action="minus">−</button>
-          <span style="min-width:30px;text-align:center;font-weight:600">${item.cantidad}</span>
-          <button data-idx="${idx}" data-action="plus">+</button>
-          <button data-idx="${idx}" data-action="remove" style="background:#ef4444;border-color:#ef4444">🗑️</button>
+        <div style="font-size:13px;color:#10b981;margin-bottom:6px">
+          $${item.precio.toFixed(0)} c/u ${modTotal > 0 ? `+ $${modTotal.toFixed(0)} extras` : ''} = $${itemTotal.toFixed(0)}
+        </div>
+        <input type="text" class="cart-item-notes" placeholder="Notas (ej: sin azúcar)" 
+               value="${item.notas}" data-idx="${idx}">
+        <div class="modifiers-section">
+          <div class="modifiers-label">Modificadores:</div>
+          <div class="modifier-chips">
+            ${modifiers.map(m => {
+              const isActive = item.modifiers.some(im => im.modifier_id === m.id);
+              return `
+                <div class="modifier-chip ${isActive ? 'active' : ''}" 
+                     data-idx="${idx}" data-mod-id="${m.id}">
+                  ${m.nombre}${m.precio_extra > 0 ? ' +$' + m.precio_extra.toFixed(0) : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
         </div>
       </div>
     `;
   }).join('');
   
-  totalEl.textContent = `Total: ${total.toFixed(0)}`;
+  totalEl.textContent = `Total: $${total.toFixed(0)}`;
   
+  // Botones cantidad
   itemsEl.querySelectorAll('button').forEach(btn => {
     const idx = parseInt(btn.dataset.idx);
     const action = btn.dataset.action;
@@ -278,14 +351,42 @@ function renderCart(){
       if (action === 'plus') cart[idx].cantidad++;
       if (action === 'minus' && cart[idx].cantidad > 1) cart[idx].cantidad--;
       if (action === 'remove') cart.splice(idx, 1);
+      saveCart();
       renderCart();
     });
   });
   
+  // Notas
   itemsEl.querySelectorAll('.cart-item-notes').forEach(input => {
     const idx = parseInt(input.dataset.idx);
     input.addEventListener('input', () => {
       cart[idx].notas = input.value;
+      saveCart();
+    });
+  });
+  
+  // Modificadores
+  itemsEl.querySelectorAll('.modifier-chip').forEach(chip => {
+    const idx = parseInt(chip.dataset.idx);
+    const modId = parseInt(chip.dataset.modId);
+    
+    chip.addEventListener('click', () => {
+      const modifier = modifiers.find(m => m.id === modId);
+      if (!modifier) return;
+      
+      const existingIdx = cart[idx].modifiers.findIndex(m => m.modifier_id === modId);
+      
+      if (existingIdx >= 0) {
+        cart[idx].modifiers.splice(existingIdx, 1);
+      } else {
+        cart[idx].modifiers.push({
+          modifier_id: modId,
+          nombre: modifier.nombre,
+          precio_extra: modifier.precio_extra
+        });
+      }
+      saveCart();
+      renderCart();
     });
   });
 }
@@ -294,13 +395,15 @@ document.getElementById('enviarBtn').addEventListener('click', async () => {
   const mesa = parseInt(document.getElementById('mesa').value);
   const mozo = document.getElementById('mozo').value.trim();
   
+  saveMozoName();
+  
   const activeTab = document.querySelector('.tab.active').dataset.tab;
   
   let payload;
   
   if (activeTab === 'menu') {
     if (cart.length === 0) {
-      return alert('❌ El carrito está vacío');
+      return showToast('El carrito está vacío', 'error');
     }
     payload = {
       table_id: mesa,
@@ -308,13 +411,17 @@ document.getElementById('enviarBtn').addEventListener('click', async () => {
       items: cart.map(c => ({
         product_id: c.id,
         cantidad: c.cantidad,
-        notas: c.notas || null
+        notas: c.notas || null,
+        modifiers: c.modifiers.map(m => ({
+          modifier_id: m.modifier_id,
+          nombre: m.nombre
+        }))
       }))
     };
   } else {
     const libre = document.getElementById('pedidoLibre').value.trim();
     if (!libre) {
-      return alert('❌ Escribí el pedido');
+      return showToast('Escribí el pedido', 'error');
     }
     payload = {
       table_id: mesa,
@@ -322,7 +429,8 @@ document.getElementById('enviarBtn').addEventListener('click', async () => {
       items: [{
         product_id: null,
         cantidad: 1,
-        notas: libre
+        notas: libre,
+        modifiers: []
       }]
     };
   }
@@ -333,23 +441,28 @@ document.getElementById('enviarBtn').addEventListener('click', async () => {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
     });
+    
+    if (!res.ok) throw new Error('Error en el servidor');
+    
     const js = await res.json();
     if (js.ok) {
-      alert(`✅ Pedido enviado #${js.order_id}`);
+      showToast(`✅ Pedido enviado #${js.order_id}`, "success");
       cart = [];
       document.getElementById('pedidoLibre').value = '';
+      localStorage.removeItem(CART_KEY);
       renderCart();
     } else {
       throw new Error("respuesta no OK");
     }
   } catch(err) {
-    enqueue(payload);
-    alert("⚠️ Sin conexión: el pedido quedó en cola y se enviará cuando vuelva Internet.");
-  } finally {
-    updateQueueUI();
+    console.error('Error enviando pedido:', err);
+    showToast("❌ Error al enviar pedido. Verifica la conexión.", "error");
   }
 });
 
+// Cargar datos iniciales
 loadData();
+loadCart();
+loadMozoName();
 </script>
 </body></html>

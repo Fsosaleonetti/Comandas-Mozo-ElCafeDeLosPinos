@@ -156,7 +156,7 @@ UPDATE users SET pin='TU_NUEVO_PIN' WHERE rol='admin';
 ## 🗂️ Estructura de Archivos
 
 ```
-El_De_Los_Pinos/
+El_Cafe_De_Los_Pinos/
 ├── app.py                      # Backend FastAPI
 ├── mozo.db                     # Base de datos SQLite
 ├── seed.sql                    # Datos de ejemplo
